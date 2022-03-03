@@ -1,25 +1,49 @@
 ---
-author: "John Karuitha"
+title: "EMPLOYEE TURNOVER"
+author: "John Karuitha & Remon Hanna"
+date: "`r format(Sys.Date(), format = '%A %B %d, %Y')`"
+subtitle: "Can `Machine Learning` Help Reduce Employee Turnover?"
+output: 
+  html_document:
+    theme: united
+    highlight: tango 
+    code_folding: hide
+    toc: true
+    toc_float: true
+    number_sections: true
+bibliography: citations.bib
 ---
 
-# Can you help reduce employee turnover?
 
-## Key Insights
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+# 📖 Background
+You work for the human capital department of a large corporation. The Board is worried about the relatively high turnover, and your team must look into ways to reduce the number of employees leaving the company.
+
+The team needs to understand better the situation, which employees are more likely to leave, and why. Once it is clear what variables impact employee churn, you can present your findings along with your ideas on how to attack the problem.
+
+# 💪 Objectives
+
+This article seeks answers to the following questions:
+
+1. Which department has the highest employee turnover? Which one has the lowest?
+2. Investigate which variables seem to be better predictors of employee departure.
+3. What recommendations would you make regarding ways to reduce employee turnover?
+
+# Key Insights
 
 1. `IT` department has the highest staff turnover, followed closely by the `logistics`.
 2. `Finance` department has the lowest incidence of staff turnover with `admin` a close second. 
 3. There is high positive correlation between `tenure` which captures the length of time an employee has been with the organisation and the `avg_hours_month`, the average number of hours an employee clocks per month. 
 
-## Recommendations
+# Key Recommendations
 
 
 
-## 📖 Background
-You work for the human capital department of a large corporation. The Board is worried about the relatively high turnover, and your team must look into ways to reduce the number of employees leaving the company.
-
-The team needs to understand better the situation, which employees are more likely to leave, and why. Once it is clear what variables impact employee churn, you can present your findings along with your ideas on how to attack the problem.
-
-## 💾 The data
+# 💾 The data
 The department has assembled data on almost 10,000 employees. The team used information from exit interviews, performance reviews, and employee records.
 
 - "department" - the department the employee belongs to.
@@ -43,15 +67,6 @@ df <- readr::read_csv('./data/employee_churn_data.csv') %>%
   mutate(left = factor(left, levels = c("yes", "no")))
 head(df)
 ```
-
-
-## 💪 Competition challenge
-
-Create a report that covers the following:
-
-1. Which department has the highest employee turnover? Which one has the lowest?
-2. Investigate which variables seem to be better predictors of employee departure.
-3. What recommendations would you make regarding ways to reduce employee turnover?
 
 ## Exploring the Data
 I start by examining the data, starting with missing values and possible duplicates. 
@@ -85,7 +100,11 @@ library(GGally)
 
 df %>%
   
-  GGally::ggpairs(ggplot2::aes(col = left, fill = left))
+  GGally::ggpairs(ggplot2::aes(col = left, fill = left)) + 
+  
+  scale_fill_manual(values = c("gray", "blue")) +
+  
+  scale_color_manual(values = c("gray", "blue"))
   
 ```
 
@@ -184,7 +203,7 @@ df %>%
   kable_classic(position = "left")
 ```
 
-## Which Variables Best Predict Staff Turnover?
+# Which Variables Best Predict Staff Turnover?
 
 In this section I use statistical learning models to examine variables that best ptredict staff turnover. I proceed by first creating a training set and a testing set from the given data. Given that the data set has a problem of imbalance in the target (dependent) variable, `left`, I upsample the data. I then run the following models. 
 
@@ -195,7 +214,7 @@ In this section I use statistical learning models to examine variables that best
 5. XG-Boost Model.
 6. An ensemble of all the models. 
 
-### Creating the Training and Testing Sets. 
+## Creating the Training and Testing Sets. 
 
 In this step, I create a traing and testing set. The training set has 75% of the data, while the testing set has the remaning 25% of the data points. 
 
@@ -217,7 +236,7 @@ df_test <- split_object %>%
 
 ```
 
-### Data Pre-processsing and Feature Engineering
+## Data Pre-processsing and Feature Engineering
 Next, I set up a recipe object that will allow for data pre-processing and feature engineering where required. In this step, I make a recipe object that does the following.
 
 1. Up-samples the data so that the target variable (`left`) has the same proportion of workers who left and remained with the organisation. 
@@ -250,6 +269,7 @@ df_recipe <- recipes::recipe(left ~ ., data = df_train) %>%
 Finally, I apply these transformations to the training and testing data sets.
 
 ```{r}
+## Generate new datasets with all steps defined included
 ###############################
 df_baked_train <- df_recipe %>%
   
@@ -268,6 +288,7 @@ Next, I fit the models and evaluate their performance.
 I start by defining the model. 
 
 ```{r}
+## Define a logitstic model
 logistic_model <- logistic_reg() %>%
   
   set_engine("glm") %>%
@@ -282,9 +303,16 @@ logistic_results <- logistic_model %>%
   
   fit(left ~ ., data = df_baked_train)
 
-broom::tidy(logistic_results)
-
-stargazer::stargazer(glm(left ~ ., data = df_baked_train, family = "binomial"), type = "html", title = "Results of Logistic Regression", align = TRUE)
+## Show coefficients table with stars for statistical significance
+stargazer::stargazer(glm(left ~ ., data = df_baked_train, 
+                         
+                         family = "binomial"), 
+                     
+                     type = "html", 
+                     
+                     title = "Results of Logistic Regression", 
+                     
+                     align = TRUE)
 ```
 
 The results of the regression in Table () show the following variables being instrumental in determining whether or not staff leave the organisation.
@@ -296,3 +324,103 @@ The results of the regression in Table () show the following variables being ins
 - Salary.
 
 The `promoted`, `tenure`, and `satisfaction` variables are major predictors staff turnover. Specifically, staff that have received a promotion have a higher likelihood of leaving, presumably for greener pastures. In contrast, staff that have higher scores in past job reviews, with a longer tenure, and a higher job satisfaction score in the past have a lower chance of leaving. Compared to staff with high salaries, staff with a lower salary are more likely to leave while those with medium salaries are more likely to stay. 
+
+The code chunk below shows the predictions from the logistic regression on the test set. I start using the model make predictions on the test set. Next, I bind the predictions (both probabilities and actual classes predicted) to the test set. 
+
+```{r}
+#############################################
+## Get class predictions
+logistic_prob <- logistic_results %>% 
+  
+  predict(new_data = df_test, type = "class")
+
+#############################################
+## Get probabilities
+logistic_class <- logistic_results %>% 
+  
+  predict(new_data = df_test, type = "prob")
+
+#############################################
+df_test_bind <- df_test %>% 
+  
+  select(left) %>% 
+  
+  bind_cols(logistic_class, logistic_prob)
+```
+
+Next, I generate metrics for evaluating the performance of the model.
+
+```{r}
+df_test_bind %>% 
+  
+  conf_mat(truth = left, estimate = .pred_class) %>% 
+  
+  autoplot(type = "mosaic")
+################################################
+df_test_bind %>% 
+  
+  conf_mat(truth = left, estimate = .pred_class) %>% 
+  
+  summary()
+```
+
+Figure below shows the area under curve
+
+```{r}
+df_test_bind %>% 
+  
+  roc_auc(truth = left, .pred_yes)
+
+df_test_bind %>% 
+  
+  roc_curve(truth = left, .pred_yes) %>% 
+  
+  autoplot()
+```
+
+
+## The Decision Tree Model
+
+
+```{r}
+decision_tree_model <- decision_tree() %>% 
+  
+  set_engine("rpart") %>% 
+  
+  set_mode("classification")
+```
+
+
+
+```{r}
+decision_result <- decision_tree_model %>%
+  
+  fit(left ~ ., data = df_baked_train)
+```
+
+```{r}
+rpart.plot::rpart.plot(decision_result$fit,
+                       
+                       main = "Visualisation of Decision Tree Model",
+                       
+                       roundint=FALSE)
+```
+
+
+## Random Forest Model
+
+
+## K-Nearest Neighbours (KNN) Model
+
+
+## Extreme Gradient Boosting (XGBoost) Model
+
+
+## Ensemble
+
+
+# Recomendations 
+
+
+# Conclusion
+
