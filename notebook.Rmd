@@ -2,7 +2,7 @@
 title: "EMPLOYEE TURNOVER"
 author: "John Karuitha & Remon Hanna"
 date: "`r format(Sys.Date(), format = '%A %B %d, %Y')`"
-subtitle: "Can `Machine Learning` Help Reduce Employee Turnover?"
+subtitle: "Can `Machine Learning` Help Manage Employee Turnover?"
 output: 
   html_document:
     theme: united
@@ -222,7 +222,9 @@ In this step, I create a traing and testing set. The training set has 75% of the
 library(tidymodels)
 
 ## Create a split object consisting 75% of data
-split_object <- initial_split(df, prop = 0.75, strata = left)
+split_object <- initial_split(df, prop = 0.75, 
+                              
+                              strata = left)
 
 ## Generate the training set
 df_train <- split_object %>%
@@ -249,10 +251,16 @@ Next, I set up a recipe object that will allow for data pre-processing and featu
 ```{r}
 library(themis)
 
-df_recipe <- recipes::recipe(left ~ ., data = df_train) %>%
+df_recipe <- recipes::recipe(left ~ ., 
+                             
+                             data = df_train) %>%
   
   ## I upsample the data to balance the outcome variable
-  themis::step_upsample(left, over_ratio = 1, seed = 500) %>%
+  themis::step_upsample(left, 
+                        
+                        over_ratio = 1, 
+                        
+                        seed = 500) %>%
   
   ## I make all character variables factors
   step_string2factor(all_nominal_predictors()) %>%
@@ -260,7 +268,9 @@ df_recipe <- recipes::recipe(left ~ ., data = df_train) %>%
   ## I remove one in a pair of highly correlated variables
   ## The threshold for removal is 0.85 (absolute) 
   ## The choice of threshold is subjective. 
-  step_corr(all_numeric_predictors(), threshold = 0.85) %>%
+  step_corr(all_numeric_predictors(), 
+            
+            threshold = 0.85) %>%
   
   ## Train these steps on the training data
   prep(training = df_train)
@@ -288,7 +298,7 @@ Next, I fit the models and evaluate their performance.
 I start by defining the model. 
 
 ```{r}
-## Define a logitstic model
+## Define a logistic model
 logistic_model <- logistic_reg() %>%
   
   set_engine("glm") %>%
@@ -332,13 +342,17 @@ The code chunk below shows the predictions from the logistic regression on the t
 ## Get class predictions
 logistic_prob <- logistic_results %>% 
   
-  predict(new_data = df_test, type = "class")
+  predict(new_data = df_test, 
+          
+          type = "class")
 
 #############################################
 ## Get probabilities
 logistic_class <- logistic_results %>% 
   
-  predict(new_data = df_test, type = "prob")
+  predict(new_data = df_test, 
+          
+          type = "prob")
 
 #############################################
 df_test_bind <- df_test %>% 
