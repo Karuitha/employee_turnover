@@ -2,7 +2,7 @@
 title: "EMPLOYEE TURNOVER"
 author: "John Karuitha & Remon Hanna"
 date: "`r format(Sys.Date(), format = '%A %B %d, %Y')`"
-subtitle: "Can `Machine Learning` Help Manage Employee Turnover?"
+subtitle: "Can Firms use `Machine Learning` to Manage Employee Turnover?"
 output: 
   html_document:
     theme: united
@@ -17,13 +17,23 @@ bibliography: citations.bib
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+if(!require(pacman)){
+  
+  install.packages("pacman")
+  
+}
+
+pacman::p_load(tidyverse, kableExtra, skimr, kable, glue, GGally, 
+               
+               corrplot, tidymodels, themis, stargazer, rpart, rpartplot)
+
 ```
 
-
 # 📖 Background
-You work for the human capital department of a large corporation. The Board is worried about the relatively high turnover, and your team must look into ways to reduce the number of employees leaving the company.
+In this data analysis project, we assume that we are employees in the human capital department of a large corporation, ABC Inc. The Board of ABC Inc. is worried about the relatively high employee turnover. Our team must look into ways to reduce the number of employees leaving the company.
 
-The team needs to understand better the situation, which employees are more likely to leave, and why. Once it is clear what variables impact employee churn, you can present your findings along with your ideas on how to attack the problem.
+Our team needs to understand better the situation, which employees are more likely to leave, and why. Once it is clear what variables impact employee churn, we shall present our findings and our ideas to the board on how to attack the problem.
 
 # 💪 Objectives
 
@@ -44,23 +54,45 @@ This article seeks answers to the following questions:
 
 
 # 💾 The data
-The department has assembled data on almost 10,000 employees. The team used information from exit interviews, performance reviews, and employee records.
+The department has assembled data on almost 10,000 employees. The team gathered the data using information from exit interviews, performance reviews, and other employee records. The data consists of the following variables. 
 
-- "department" - the department the employee belongs to.
-- "promoted" - 1 if the employee was promoted in the previous 24 months, 0 otherwise.
-- "review" - the composite score the employee received in their last evaluation.
-- "projects" - how many projects the employee is involved in.
-- "salary" - for confidentiality reasons, salary comes in three tiers: low, medium, high.
-- "tenure" - how many years the employee has been at the company.
-- "satisfaction" - a measure of employee satisfaction from surveys.
-- "avg_hrs_month" - the average hours the employee worked in a month.
-- "left" - "yes" if the employee ended up leaving, "no" otherwise.
+```{r}
+tribble(~ Variable, ~ Description,
+        
+        "department", "The department the employee belongs.",
+        
+        "promoted", "1 if the employee was promoted in the previous 24 months, 0 otherwise.", 
+        
+        "review", "The composite score the employee received in their last evaluation.", 
+        
+        "projects", "How many projects the employee is involved.", 
+        
+        "salary", "For confidentiality reasons, salary comes in three tiers: low, medium, and high.", 
+        
+        "tenure", "How many years the employee has been at the company.", 
+        
+        "satisfaction", "a measure of employee satisfaction from surveys.", 
+        
+        "avg_hrs_month", "the average hours the employee worked in a month.", 
+        
+        "left", "'yes' if the employee ended up leaving, 'no' otherwise.") %>% 
+  
+  kbl(., booktabs = TRUE, 
+      
+      caption = "Variables Description") %>% 
+  
+  kable_classic(full_width = TRUE, font_size = 12, 
+                
+                bootstrap_options = "striped")
+```
 
+
+
+## Exploring the Data
+
+We read the data from a csv file provided. You can download the data from this [link]().
 
 ```{r message = FALSE}
-
-library(tidyverse)
-library(glue)
 
 df <- readr::read_csv('./data/employee_churn_data.csv') %>%
   
@@ -68,8 +100,8 @@ df <- readr::read_csv('./data/employee_churn_data.csv') %>%
 head(df)
 ```
 
-## Exploring the Data
-I start by examining the data, starting with missing values and possible duplicates. 
+
+We then examine the data, starting with missing values and possible duplicates. 
 
 ```{r}
 sapply(df, is.na) %>%
@@ -96,7 +128,6 @@ Figure () below shows a pairs plot between the ten variables in the dataset. Two
 
 ```{r, fig.width = 12, fig.height = 8, fig.cap = "Visualisation of the Variables", warning = FALSE, message = FALSE}
 
-library(GGally)
 
 df %>%
   
@@ -115,7 +146,6 @@ In this section, I summarise the data and present the correlation matrix.
 The correlation matrix in Table () shows a very high correlation between `average hours per month` worked and `tenure`as noted earlier in figure (). The data further shows some substantial correlation between `tenure` and `review`, `satisfaction` and `review`, `average hours per month` and review`, `satisfaction` and `tenure`, and finally, `average hours per month` and `satisfaction`. 
 
 ```{r}
-library(corrplot)
 
 df %>%
   
@@ -129,7 +159,6 @@ df %>%
 Table () below shows the summary statistics for the numeric predictor variables. 
 
 ```{r}
-library(kableExtra)
 
 df %>%
   
@@ -219,7 +248,6 @@ In this section I use statistical learning models to examine variables that best
 In this step, I create a traing and testing set. The training set has 75% of the data, while the testing set has the remaning 25% of the data points. 
 
 ```{r}
-library(tidymodels)
 
 ## Create a split object consisting 75% of data
 split_object <- initial_split(df, prop = 0.75, 
@@ -249,7 +277,6 @@ Next, I set up a recipe object that will allow for data pre-processing and featu
 
 
 ```{r}
-library(themis)
 
 df_recipe <- recipes::recipe(left ~ ., 
                              
@@ -316,7 +343,7 @@ logistic_results <- logistic_model %>%
 ## Show coefficients table with stars for statistical significance
 stargazer::stargazer(glm(left ~ ., data = df_baked_train, 
                          
-                         family = "binomial"), 
+                     family = "binomial"), 
                      
                      type = "html", 
                      
@@ -340,7 +367,7 @@ The code chunk below shows the predictions from the logistic regression on the t
 ```{r}
 #############################################
 ## Get class predictions
-logistic_prob <- logistic_results %>% 
+logistic_class <- logistic_results %>% 
   
   predict(new_data = df_test, 
           
@@ -348,7 +375,7 @@ logistic_prob <- logistic_results %>%
 
 #############################################
 ## Get probabilities
-logistic_class <- logistic_results %>% 
+logistic_prob <- logistic_results %>% 
   
   predict(new_data = df_test, 
           
@@ -359,7 +386,9 @@ df_test_bind <- df_test %>%
   
   select(left) %>% 
   
-  bind_cols(logistic_class, logistic_prob)
+  bind_cols(logistic_class, 
+            
+            logistic_prob)
 ```
 
 Next, I generate metrics for evaluating the performance of the model.
@@ -367,13 +396,16 @@ Next, I generate metrics for evaluating the performance of the model.
 ```{r}
 df_test_bind %>% 
   
-  conf_mat(truth = left, estimate = .pred_class) %>% 
-  
+  conf_mat(truth = left, 
+           
+           estimate = .pred_class) %>% 
   autoplot(type = "mosaic")
 ################################################
 df_test_bind %>% 
   
-  conf_mat(truth = left, estimate = .pred_class) %>% 
+  conf_mat(truth = left, 
+           
+           estimate = .pred_class) %>% 
   
   summary()
 ```
