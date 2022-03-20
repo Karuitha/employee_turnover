@@ -1,0 +1,2413 @@
+<!DOCTYPE html>
+<html lang="en-us"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="generator" content="Source Themes Academic 4.7.0">
+
+  
+
+  
+  
+  
+  
+  
+    
+    
+    
+  
+  
+
+  <meta name="author" content="Brendan Cullen">
+
+  
+  
+  
+    
+  
+  <meta name="description" content="An overview and worked example of tree-based machine learning methods in R using `tidymodels`">
+
+  
+  <link rel="alternate" hreflang="en-us" href="https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/">
+
+  
+
+
+  
+  
+  
+  <meta name="theme-color" content="#88BDBC">
+  
+
+  
+  
+
+  
+  
+  
+  
+    
+    <link rel="stylesheet" href="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/academicons.css" integrity="sha256-uFVgMKfistnJAfoCUQigIl+JfUaP47GrRKjf6CTPVmw=" crossorigin="anonymous">
+    <link rel="stylesheet" href="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/all.css" integrity="sha256-+N4/V/SbAFiW1MPBCXnfnP9QSN3+Keu+NlB+0ev/YKQ=" crossorigin="anonymous">
+    <link rel="stylesheet" href="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/jquery.css" integrity="sha256-Vzbj7sDDS/woiFS3uNKo8eIuni59rjyNGtXfstRzStA=" crossorigin="anonymous">
+
+    
+    
+    
+      
+    
+    
+      
+      
+        
+          <link rel="stylesheet" href="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/github.css" crossorigin="anonymous" title="hl-light" disabled="">
+          <link rel="stylesheet" href="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/dracula.css" crossorigin="anonymous" title="hl-dark">
+        
+      
+    
+
+    
+    <link rel="stylesheet" href="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/leaflet.css" integrity="sha256-SHMGCYmST46SoyGgo4YR/9AlK1vf3ff84Aq9yK4hdqM=" crossorigin="anonymous">
+    
+
+    
+
+    
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+        <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/lazysizes.js" integrity="sha256-Md1qLToewPeKjfAHU1zyPwOutccPAm5tahnaw7Osw0A=" crossorigin="anonymous" async=""></script>
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+      
+
+      
+      
+        
+      
+
+      
+    
+      
+
+      
+      
+
+      
+    
+
+  
+
+  
+  
+  
+  <link rel="stylesheet" href="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/css.css">
+  
+
+  
+  
+  
+  
+  <link rel="stylesheet" href="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/academic.css">
+
+  
+
+
+
+
+
+<script async="" src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/js.js"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+
+  function gtag() {
+      dataLayer.push(arguments);
+  }
+
+  function trackOutboundLink(url) {
+    gtag('event', 'click', {
+         'event_category': 'outbound',
+         'event_label': url,
+         'transport_type': 'beacon',
+         'event_callback': function () {
+           document.location = url;
+         }
+    });
+    console.debug("Outbound link clicked: " + url);
+  }
+
+  function onClickCallback(event) {
+    if ((event.target.tagName !== 'A') || (event.target.host === window.location.host)) {
+      return;
+    }
+    trackOutboundLink(event.target);  
+  }
+
+  gtag('js', new Date());
+  gtag('config', 'UA-150600553-1', {});
+
+  
+  document.addEventListener('click', onClickCallback, false);
+</script>
+
+
+  
+
+
+  
+
+  <link rel="manifest" href="https://bcullen.rbind.io/index.webmanifest">
+  <link rel="icon" type="image/png" href="https://bcullen.rbind.io/images/icon_hub7cce6fc17a4b537dd89fd523a3d6c48_35686_32x32_fill_lanczos_center_2.png">
+  <link rel="apple-touch-icon" type="image/png" href="https://bcullen.rbind.io/images/icon_hub7cce6fc17a4b537dd89fd523a3d6c48_35686_192x192_fill_lanczos_center_2.png">
+
+  <link rel="canonical" href="https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/">
+
+  
+  
+  
+  
+  
+    
+  
+  
+  <meta property="twitter:card" content="summary_large_image">
+  
+  <meta property="twitter:site" content="@_bcullen">
+  <meta property="twitter:creator" content="@_bcullen">
+  
+  <meta property="og:site_name" content="Brendan Cullen">
+  <meta property="og:url" content="https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/">
+  <meta property="og:title" content="Tidymodels: Decision Tree Learning in R | Brendan Cullen">
+  <meta property="og:description" content="An overview and worked example of tree-based machine learning methods in R using `tidymodels`"><meta property="og:image" content="https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/featured.jpg">
+  <meta property="twitter:image" content="https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/featured.jpg"><meta property="og:locale" content="en-us">
+  
+    
+      <meta property="article:published_time" content="2020-06-02T00:00:00+00:00">
+    
+    <meta property="article:modified_time" content="2020-10-26T22:20:22-07:00">
+  
+
+  
+
+
+    
+
+
+
+
+
+
+  
+
+
+
+
+
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/"
+  },
+  "headline": "Tidymodels: Decision Tree Learning in R",
+  
+  "image": [
+    "https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/featured.jpg"
+  ],
+  
+  "datePublished": "2020-06-02T00:00:00Z",
+  "dateModified": "2020-10-26T22:20:22-07:00",
+  
+  "author": {
+    "@type": "Person",
+    "name": "Brendan Cullen"
+  },
+  
+  "publisher": {
+    "@type": "Organization",
+    "name": "Brendan Cullen",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "img/https://bcullen.rbind.io/"
+    }
+  },
+  "description": "An overview and worked example of tree-based machine learning methods in R using `tidymodels`"
+}
+</script>
+
+  
+
+  
+
+
+  
+
+
+  
+  <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/popper.js"></script>
+  <link rel="stylesheet" href="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/codefolding.css">
+
+
+  <title>Tidymodels: Decision Tree Learning in R | Brendan Cullen</title>
+
+</head>
+
+<body id="top" data-spy="scroll" data-offset="70" data-target="#TableOfContents" class="dark" data-new-gr-c-s-check-loaded="8.896.0" data-gr-ext-installed="">
+
+  <aside class="search-results" id="search">
+  <div class="container">
+    <section class="search-header">
+
+      <div class="row no-gutters justify-content-between mb-3">
+        <div class="col-6">
+          <h1>Search</h1>
+        </div>
+        <div class="col-6 col-search-close">
+          <a class="js-search" href="#"><i class="fas fa-times-circle text-muted" aria-hidden="true"></i></a>
+        </div>
+      </div>
+
+      <div id="search-box">
+        
+        <input name="q" id="search-query" placeholder="Search..." autocapitalize="none" autocomplete="off" autocorrect="off" spellcheck="false" type="search">
+        
+      </div>
+
+    </section>
+    <section class="section-search-results">
+
+      <div id="search-hits">
+        
+      </div>
+
+    </section>
+  </div>
+</aside>
+
+
+  
+
+
+
+
+
+
+
+<nav class="navbar navbar-expand-lg navbar-light compensate-for-scrollbar" id="navbar-main">
+  <div class="container">
+
+    
+    <div class="d-none d-lg-inline-flex">
+      <a class="navbar-brand" href="https://bcullen.rbind.io/">Brendan Cullen</a>
+    </div>
+    
+
+    
+    <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-content" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+    <span><i class="fas fa-bars"></i></span>
+    </button>
+    
+
+    
+    <div class="navbar-brand-mobile-wrapper d-inline-flex d-lg-none">
+      <a class="navbar-brand" href="https://bcullen.rbind.io/">Brendan Cullen</a>
+    </div>
+    
+
+    
+    
+    <div class="navbar-collapse main-menu-item collapse justify-content-end" id="navbar-content">
+
+      
+      <ul class="navbar-nav d-md-inline-flex">
+        
+
+        
+
+        
+        
+        
+          
+        
+
+        
+        
+        
+        
+        
+        
+          
+          
+          
+            
+          
+          
+        
+
+        <li class="nav-item">
+          <a class="nav-link " href="https://bcullen.rbind.io/#about"><span>ABOUT</span></a>
+        </li>
+
+        
+        
+
+        
+
+        
+        
+        
+          
+        
+
+        
+        
+        
+        
+        
+        
+
+        <li class="nav-item">
+          <a class="nav-link " href="https://bcullen.rbind.io/project_landing"><span>PROJECTS</span></a>
+        </li>
+
+        
+        
+
+        
+        <li class="nav-item dropdown">
+          <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"><span>TEACHING</span><span class="caret"></span>
+          </a>
+          <div class="dropdown-menu">
+            
+              <a class="dropdown-item" href="https://bcullen.rbind.io/courses/university/"><span>University Courses <i class="fas fa-university"></i></span></a>
+            
+              <a class="dropdown-item" href="https://bcullen.rbind.io/courses/workshops/"><span>Workshops <i class="fas fa-laptop-code"></i></span></a>
+            
+          </div>
+        </li>
+
+        
+        
+
+        
+
+        
+        
+        
+          
+        
+
+        
+        
+        
+        
+        
+        
+
+        <li class="nav-item">
+          <a class="nav-link  active" href="https://bcullen.rbind.io/post"><span>BLOG</span></a>
+        </li>
+
+        
+        
+
+        
+        <li class="nav-item dropdown">
+          <a href="#" class="nav-link dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"><span>CV &amp; RÉSUMÉ</span><span class="caret"></span>
+          </a>
+          <div class="dropdown-menu">
+            
+              <a class="dropdown-item" href="https://bcullen.rbind.io/cv/index.html"><span>CV <i class="fas fa-copy"></i></span></a>
+            
+              <a class="dropdown-item" href="https://bcullen.rbind.io/cv/resume.html"><span>RÉSUMÉ <i class="fas fa-file"></i></span></a>
+            
+          </div>
+        </li>
+
+        
+        
+
+        
+
+        
+        
+        
+          
+        
+
+        
+        
+        
+        
+        
+        
+
+        <li class="nav-item">
+          <a class="nav-link " href="https://bcullen.rbind.io/contact"><span>CONTACT</span></a>
+        </li>
+
+        
+        
+
+      
+
+        
+      </ul>
+    </div>
+
+    <ul class="nav-icons navbar-nav flex-row ml-auto d-flex pl-md-2">
+      
+      <li class="nav-item">
+        <a class="nav-link js-search" href="#"><i class="fas fa-search" aria-hidden="true"></i></a>
+      </li>
+      
+
+      
+      <li class="nav-item">
+        <a class="nav-link js-dark-toggle" href="#"><i class="fas fa-sun" aria-hidden="true"></i></a>
+      </li>
+      
+
+      
+
+    </ul>
+
+  </div>
+</nav>
+
+
+  <article class="article">
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+
+<div class="article-container pt-3">
+  <h1>Tidymodels: Decision Tree Learning in R</h1>
+
+  
+  <p class="page-subtitle">Cianna Bedford-Petersen, Christopher Loan &amp; Brendan Cullen</p>
+  
+  
+  
+
+<div id="code-folding-buttons" class="dropdown btn-group pull-right">
+  <a class="btn btn-light btn-lg dropdown-toggle" href="#" role="button" id="allCodeToggleButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    Code
+  </a>
+  <div class="dropdown-menu" aria-labelledby="allCodeToggleButton">
+    <a id="rmd-show-all-code" class="dropdown-item small" href="#">Show all</a>
+    <a id="rmd-hide-all-code" class="dropdown-item small" href="#">Hide all</a>
+  </div>
+</div>
+
+
+
+
+  
+
+
+<div class="article-metadata">
+
+  
+  
+
+  
+  <span class="article-date">
+    
+    
+      
+          Last updated on
+      
+    
+    Oct 26, 2020
+  </span>
+  
+
+  
+
+  
+  <span class="middot-divider"></span>
+  <span class="article-reading-time">
+    22 min read
+  </span>
+  
+
+  
+  
+  
+
+  
+  
+
+</div>
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div>
+
+
+<div class="article-header article-container featured-image-wrapper mt-4 mb-4" style="max-width: 720px; max-height: 469px;">
+  <div style="position: relative">
+    <img src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/featured_hub0d2426dee7b9dcc923dfa975c5b9e8b_53537_720x0_resi.jpg" alt="" class="featured-image">
+    <span class="article-header-caption">Image by <a href="https://pixabay.com/users/ilyessuti-3558510/?utm_source=link-attribution&amp;utm_medium=referral&amp;utm_campaign=image&amp;utm_content=4634225">Ilona Ilyés</a> from <a href="https://pixabay.com/?utm_source=link-attribution&amp;utm_medium=referral&amp;utm_campaign=image&amp;utm_content=4634225">Pixabay</a></span>
+  </div>
+</div>
+
+
+  <div class="article-container">
+
+    <div class="article-style">
+      
+<script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/header-attrs.js"></script>
+<link href="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/anchor-sections.css" rel="stylesheet">
+<script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/anchor-sections.js"></script>
+
+
+<p>RStudio has recently released a cohesive suite of packages for modelling and machine learning, called <code>{tidymodels}</code>. The successor to Max Kuhn’s <code>{caret}</code> package, <code>{tidymodels}</code>
+ allows for a tidy approach to your data from start to finish. We’re 
+going to walk through the basics for getting off the ground with <code>{tidymodels}</code>
+ and demonstrate its application to three different tree-based methods 
+for predicting student test scores. For further information about the 
+package, you can visit <a href="https://www.tidymodels.org/" class="uri">https://www.tidymodels.org/</a>.</p>
+<div id="setup" class="section level1">
+<h1 class="hasAnchor">Setup<a href="#setup" class="anchor-section"></a></h1>
+<p>Load both the <code>{tidyverse}</code> and <code>{tidymodels}</code> packages into your environment. We’ll also load in the <code>{skimr}</code>
+ package to help us with some descriptives for our data and a host of 
+other packages that will be required to run our machine learning models.</p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F361" aria-expanded="true" aria-controls="rcode-643E0F361"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F361" style=""><pre class="r"><code class="hljs"><span class="hljs-keyword">library</span>(tidymodels) 
+<span class="hljs-keyword">library</span>(tidyverse) <span class="hljs-comment"># manipulating data</span>
+<span class="hljs-keyword">library</span>(skimr) <span class="hljs-comment"># data visualization</span>
+<span class="hljs-keyword">library</span>(baguette) <span class="hljs-comment"># bagged trees</span>
+<span class="hljs-keyword">library</span>(future) <span class="hljs-comment"># parallel processing &amp; decrease computation time</span>
+<span class="hljs-keyword">library</span>(xgboost) <span class="hljs-comment"># boosted trees</span></code></pre></div>
+</div>
+<div id="import-the-data" class="section level1">
+<h1 class="hasAnchor">Import the data<a href="#import-the-data" class="anchor-section"></a></h1>
+<p>We use simulated data which approximates reading and math scores for 
+~189,000 3rd-8th grade students in Oregon public schools see <a href="https://www.kaggle.com/c/edld-654-spring-2020">this Kaggle page</a> for details. For the purpose of demonstration, we’ll be sampling 1% of the data with <code>sample_frac()</code>
+ to keep computer processing time manageable. All school IDs in the data
+ are real, so we can use that information to link the data with other 
+sources. Specifically, we’re also going to pull in some data on student 
+enrollment in free and reduced lunch from the National Center for 
+Education Statistics and some ethnicity data from the Oregon Department 
+of Education.</p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F362" aria-expanded="true" aria-controls="rcode-643E0F362"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F362" style=""><pre class="r"><code class="hljs">set.seed(<span class="hljs-number">100</span>)
+
+<span class="hljs-comment"># import data and perform initial cleaning</span>
+<span class="hljs-comment"># initial cleaning steps include: </span>
+<span class="hljs-comment"># *recode NA's for lang_cd and ayp_lep to more meaningful values</span>
+<span class="hljs-comment"># *remove vars with entirely missing data</span>
+<span class="hljs-comment"># Note: the data is called 'train.csv', but we will actually further split this into its own training and testing data</span>
+
+dat &lt;- read_csv(here::here(<span class="hljs-string">"static"</span>, <span class="hljs-string">"data"</span>, <span class="hljs-string">"train.csv"</span>)) %&gt;% 
+  select(-classification) %&gt;% <span class="hljs-comment"># remove this variable because it's redundant with `score`</span>
+  mutate(lang_cd = ifelse(is.na(lang_cd), <span class="hljs-string">"E"</span>, lang_cd), 
+         ayp_lep = ifelse(is.na(ayp_lep), <span class="hljs-string">"G"</span>, ayp_lep)) %&gt;% 
+  sample_frac(<span class="hljs-number">.01</span>) %&gt;% <span class="hljs-comment"># sample 1% of the data to reduce run time</span>
+  janitor::remove_empty(c(<span class="hljs-string">"rows"</span>, <span class="hljs-string">"cols"</span>)) %&gt;% 
+  drop_na() %&gt;% 
+  select_if(~length(unique(.x)) &gt; <span class="hljs-number">1</span>)
+
+<span class="hljs-comment"># import fall membership report ethcnicity data and do some basic cleaning and renaming</span>
+sheets &lt;- readxl::excel_sheets(here::here(<span class="hljs-string">"static"</span>, <span class="hljs-string">"data"</span>, <span class="hljs-string">"fallmembershipreport_20192020.xlsx"</span>))
+
+ode_schools &lt;- readxl::read_xlsx(here::here(<span class="hljs-string">"static"</span>, <span class="hljs-string">"data"</span>, <span class="hljs-string">"fallmembershipreport_20192020.xlsx"</span>),
+                                 sheet = sheets[<span class="hljs-number">4</span>])
+
+ethnicities &lt;- ode_schools %&gt;%
+  select(attnd_schl_inst_id = `Attending School ID`,
+         attnd_dist_inst_id = `Attending District Institution ID`,
+         sch_name = `School Name`,
+         contains(<span class="hljs-string">"%"</span>)) %&gt;%
+  janitor::clean_names()
+
+names(ethnicities) &lt;- gsub(<span class="hljs-string">"x2019_20_percent"</span>, <span class="hljs-string">"p"</span>, names(ethnicities))
+
+<span class="hljs-comment"># join ethnicity data with original dataset</span>
+dat &lt;- left_join(dat, ethnicities)
+
+<span class="hljs-comment"># import and tidy free and reduced lunch data </span>
+frl &lt;- rio::import(<span class="hljs-string">"https://nces.ed.gov/ccd/Data/zip/ccd_sch_033_1718_l_1a_083118.zip"</span>,
+              setclass = <span class="hljs-string">"tbl_df"</span>)  %&gt;% 
+  janitor::clean_names()  %&gt;% 
+  filter(st == <span class="hljs-string">"OR"</span>)  %&gt;%
+  select(ncessch, lunch_program, student_count)  %&gt;% 
+  mutate(student_count = replace_na(student_count, <span class="hljs-number">0</span>))  %&gt;% 
+  pivot_wider(names_from = lunch_program,
+              values_from = student_count)  %&gt;% 
+  janitor::clean_names()  %&gt;% 
+  mutate(ncessch = as.double(ncessch))
+
+<span class="hljs-comment"># import student counts for each school across grades</span>
+stu_counts &lt;- rio::import(<span class="hljs-string">"https://github.com/datalorax/ach-gap-variability/raw/master/data/achievement-gaps-geocoded.csv"</span>, setclass = <span class="hljs-string">"tbl_df"</span>)  %&gt;% 
+  filter(state == <span class="hljs-string">"OR"</span> &amp; year == <span class="hljs-number">1718</span>)  %&gt;% 
+  count(ncessch, wt = n)  %&gt;% 
+  mutate(ncessch = as.double(ncessch))
+
+<span class="hljs-comment"># join frl and stu_counts data</span>
+frl &lt;- left_join(frl, stu_counts)
+
+<span class="hljs-comment"># add frl data to train data</span>
+dat &lt;- left_join(dat, frl)</code></pre></div>
+<p>After loading in our three datasets, we’ll join them together to make
+ one cohesive data set to use for modelling. After joining, the data 
+contains both student-level variables (e.g.&nbsp;gender, ethnicity, 
+enrollment in special education/talented and gifted programs, etc.) and 
+district-level variables (e.g.&nbsp;school longitude and latitude, 
+proportion of students who qualify for free and reduced-price lunch, 
+etc.), all of which will be included for each 3 of our <code>{tidymodels}</code> tree-based examples.</p>
+<p>For a more complete description of the variables, you can download the data dictionary <a href="https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/data_dictionary.csv">here</a>.</p>
+</div>
+<div id="explore-the-data" class="section level1">
+<h1 class="hasAnchor">Explore the data<a href="#explore-the-data" class="anchor-section"></a></h1>
+<p>We’ll use the <code>skim()</code> function from <code>{skimr}</code> 
+to take a closer look at our variables. Many numeric predictors are 
+clearly non-normal (see histograms below), but this is no problem as 
+tree-based methods are robust to non-normality.</p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F363" aria-expanded="true" aria-controls="rcode-643E0F363"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F363" style=""><pre class="r"><code class="hljs">dat %&gt;% 
+  select(-contains(<span class="hljs-string">"id"</span>), -ncessch, -missing, -not_applicable) %&gt;%  <span class="hljs-comment"># remove ID and irrelevant variables</span>
+  mutate(tst_dt = lubridate::as_date(lubridate::mdy_hms(tst_dt))) %&gt;% <span class="hljs-comment"># covert test date to date</span>
+  modify_if(is.character, as.factor) %&gt;%  <span class="hljs-comment"># convert character vars to factors</span>
+  skim() %&gt;% 
+  select(-starts_with(<span class="hljs-string">"numeric.p"</span>)) <span class="hljs-comment"># remove quartiles</span></code></pre></div>
+<table>
+<caption><span id="tab:unnamed-chunk-4">Table 1: </span>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td align="left">Name</td>
+<td align="left">Piped data</td>
+</tr>
+<tr class="even">
+<td align="left">Number of rows</td>
+<td align="left">1857</td>
+</tr>
+<tr class="odd">
+<td align="left">Number of columns</td>
+<td align="left">41</td>
+</tr>
+<tr class="even">
+<td align="left">_______________________</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Column type frequency:</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Date</td>
+<td align="left">1</td>
+</tr>
+<tr class="odd">
+<td align="left">factor</td>
+<td align="left">25</td>
+</tr>
+<tr class="even">
+<td align="left">numeric</td>
+<td align="left">15</td>
+</tr>
+<tr class="odd">
+<td align="left">________________________</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Group variables</td>
+<td align="left">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: Date</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="left">min</th>
+<th align="left">max</th>
+<th align="left">median</th>
+<th align="right">n_unique</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">tst_dt</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">2018-03-16</td>
+<td align="left">2018-06-07</td>
+<td align="left">2018-05-18</td>
+<td align="right">47</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: factor</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="left">ordered</th>
+<th align="right">n_unique</th>
+<th align="left">top_counts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">gndr</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">M: 939, F: 918</td>
+</tr>
+<tr class="even">
+<td align="left">ethnic_cd</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">7</td>
+<td align="left">W: 1151, H: 458, M: 100, A: 79</td>
+</tr>
+<tr class="odd">
+<td align="left">tst_bnch</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">6</td>
+<td align="left">G6: 343, 1B: 330, G4: 304, G7: 304</td>
+</tr>
+<tr class="even">
+<td align="left">migrant_ed_fg</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">N: 1793, Y: 64</td>
+</tr>
+<tr class="odd">
+<td align="left">ind_ed_fg</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">N: 1842, Y: 15</td>
+</tr>
+<tr class="even">
+<td align="left">sp_ed_fg</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">N: 1614, Y: 243</td>
+</tr>
+<tr class="odd">
+<td align="left">tag_ed_fg</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">N: 1759, Y: 98</td>
+</tr>
+<tr class="even">
+<td align="left">econ_dsvntg</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1100, N: 757</td>
+</tr>
+<tr class="odd">
+<td align="left">ayp_lep</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">10</td>
+<td align="left">G: 1471, F: 164, Y: 72, E: 58</td>
+</tr>
+<tr class="even">
+<td align="left">stay_in_dist</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1811, N: 46</td>
+</tr>
+<tr class="odd">
+<td align="left">stay_in_schl</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1803, N: 54</td>
+</tr>
+<tr class="even">
+<td align="left">dist_sped</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">N: 1846, Y: 11</td>
+</tr>
+<tr class="odd">
+<td align="left">trgt_assist_fg</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">3</td>
+<td align="left">N: 1773, Y: 83, y: 1</td>
+</tr>
+<tr class="even">
+<td align="left">ayp_schl_partic</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1846, N: 11</td>
+</tr>
+<tr class="odd">
+<td align="left">ayp_dist_prfrm</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1803, N: 54</td>
+</tr>
+<tr class="even">
+<td align="left">ayp_schl_prfrm</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1785, N: 72</td>
+</tr>
+<tr class="odd">
+<td align="left">rc_schl_partic</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1846, N: 11</td>
+</tr>
+<tr class="even">
+<td align="left">rc_dist_prfrm</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1803, N: 54</td>
+</tr>
+<tr class="odd">
+<td align="left">rc_schl_prfrm</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1785, N: 72</td>
+</tr>
+<tr class="even">
+<td align="left">lang_cd</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">E: 1815, S: 42</td>
+</tr>
+<tr class="odd">
+<td align="left">tst_atmpt_fg</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1853, P: 4</td>
+</tr>
+<tr class="even">
+<td align="left">grp_rpt_schl_partic</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1846, N: 11</td>
+</tr>
+<tr class="odd">
+<td align="left">grp_rpt_dist_prfrm</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1845, N: 12</td>
+</tr>
+<tr class="even">
+<td align="left">grp_rpt_schl_prfrm</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">2</td>
+<td align="left">Y: 1834, N: 23</td>
+</tr>
+<tr class="odd">
+<td align="left">sch_name</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="left">FALSE</td>
+<td align="right">699</td>
+<td align="left">Hig: 14, Jud: 14, Hou: 13, Fiv: 11</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">skim_variable</th>
+<th align="right">n_missing</th>
+<th align="right">complete_rate</th>
+<th align="right">mean</th>
+<th align="right">sd</th>
+<th align="left">hist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">enrl_grd</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">5.44</td>
+<td align="right">1.69</td>
+<td align="left">▇▃▅▃▃</td>
+</tr>
+<tr class="even">
+<td align="left">score</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">2495.34</td>
+<td align="right">115.19</td>
+<td align="left">▁▁▂▇▁</td>
+</tr>
+<tr class="odd">
+<td align="left">lat</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">44.79</td>
+<td align="right">0.99</td>
+<td align="left">▂▁▂▅▇</td>
+</tr>
+<tr class="even">
+<td align="left">lon</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">-122.51</td>
+<td align="right">1.16</td>
+<td align="left">▅▇▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">p_american_indian_alaska_native</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.01</td>
+<td align="right">0.06</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">p_asian</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.04</td>
+<td align="right">0.07</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">p_native_hawaiian_pacific_islander</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.01</td>
+<td align="right">0.01</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">p_black_african_american</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.02</td>
+<td align="right">0.04</td>
+<td align="left">▇▁▁▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">p_hispanic_latino</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.25</td>
+<td align="right">0.18</td>
+<td align="left">▇▅▂▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">p_white</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.60</td>
+<td align="right">0.20</td>
+<td align="left">▁▃▅▇▅</td>
+</tr>
+<tr class="odd">
+<td align="left">p_multiracial</td>
+<td align="right">1</td>
+<td align="right">1</td>
+<td align="right">0.06</td>
+<td align="right">0.03</td>
+<td align="left">▇▆▁▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">free_lunch_qualified</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">231.23</td>
+<td align="right">147.55</td>
+<td align="left">▇▇▃▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">reduced_price_lunch_qualified</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">39.86</td>
+<td align="right">24.77</td>
+<td align="left">▆▇▃▁▁</td>
+</tr>
+<tr class="even">
+<td align="left">no_category_codes</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">271.09</td>
+<td align="right">165.44</td>
+<td align="left">▆▇▃▁▁</td>
+</tr>
+<tr class="odd">
+<td align="left">n</td>
+<td align="right">0</td>
+<td align="right">1</td>
+<td align="right">816.07</td>
+<td align="right">536.55</td>
+<td align="left">▇▃▂▁▁</td>
+</tr>
+</tbody>
+</table>
+<p>While most of our predictors are categorical, we can use <code>{corrplot}</code> to better visualize the relationships among the numeric variables.</p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F364" aria-expanded="true" aria-controls="rcode-643E0F364"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F364" style=""><pre class="r"><code class="hljs">dat %&gt;% 
+  select(-contains(<span class="hljs-string">"id"</span>), -ncessch, -missing, -not_applicable) %&gt;% 
+  select_if(is.numeric) %&gt;% 
+  select(score, everything()) %&gt;% 
+  cor(use = <span class="hljs-string">"complete.obs"</span>) %&gt;% 
+  corrplot::corrplot()</code></pre></div>
+<p><img src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/unnamed-chunk-5-1.png" width="672"></p>
+</div>
+<div id="split-data-and-resample" class="section level1">
+<h1 class="hasAnchor">Split data and resample<a href="#split-data-and-resample" class="anchor-section"></a></h1>
+<p>The first step of our analysis is to split our data into two separate
+ sets: a “training” set and a “testing” set. The training set is used to
+ train a model and, if desired, to adjust (i.e., “tune”) the model’s 
+hyperparameters before evaluating its final performance on our test 
+data. By allowing us to test a model on a new sample, we assess “out of 
+sample” accuracy (i.e., unseen data-—what all predictive models are 
+interested in) and limit overfitting to the training set. We can do this
+ efficiently with the <code>initial_split()</code> function. This comes from the <code>{rsample}</code> package, which is part of the <code>{tidymodels}</code>
+ package that we already loaded. Defaults put 75% of the data in the 
+training set and 25% in the test set, but this can be adjusted with the <code>prop</code> argument. Then, we’ll extract the training data from our split object and assign it a name.</p>
+<p>To further prevent over-fitting, we’ll resample our data using <code>vfold_cv()</code>. This function outputs k-<em>fold</em>
+ cross-validated versions of our training data, where k = the number of 
+times we resample (unsure why v- is used instead of k- here). By using k
+ = 10 data sets, we get a better estimate of the model’s out-of-sample 
+accuracy. On top of decreasing bias from over-fitting, this is essential
+ when tuning hyperparameters (though we plan to apply defaults and not 
+tune here, for brevity). Though our use of 10-fold cross validation is 
+both frequently used and effective, it should be noted that other 
+methods (e.g., bootstrap resampling) or other k-values are sometimes 
+used to accomplish the same goal.</p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F365" aria-expanded="true" aria-controls="rcode-643E0F365"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F365" style=""><pre class="r"><code class="hljs"><span class="hljs-comment"># split the data</span>
+split &lt;- initial_split(dat)
+
+<span class="hljs-comment"># extract the training data</span>
+train &lt;- training(split)
+
+<span class="hljs-comment"># resample the data with 10-fold cross-validation (10-fold by default)</span>
+cv &lt;- vfold_cv(train)</code></pre></div>
+</div>
+<div id="pre-processing" class="section level1">
+<h1 class="hasAnchor">Pre-processing<a href="#pre-processing" class="anchor-section"></a></h1>
+<p>Before we add in our data to the model, we’re going to set up an object that pre-processes our data. This is called a <em>recipe</em>.
+ To create a recipe, you’ll first specify a formula for your model, 
+indicating which variable is your outcome and which are your predictors.
+ Using <code>~.</code> here will indicate that we want to use all variables other than <code>score</code>
+ as predictors. Then, we can specify a series of pre-processing steps 
+for our data that directs our recipe to assign our variables a role or 
+performs feature engineering steps. Pre-processing may be sound 
+uncommon, but if you’ve ever used <code>lm()</code> (or several other <code>R</code>
+ functions) you’ve done some of this by simply calling the function 
+(e.g., automatic dummy-coding to handle categorical data). This is 
+beneficial because it gives the analyst more control, despite adding 
+complexity to the process.</p>
+<p>A complete list of possible pre-processing steps can be found here: <a href="https://www.tidymodels.org/find/recipes/" class="uri">https://www.tidymodels.org/find/recipes/</a></p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F366" aria-expanded="true" aria-controls="rcode-643E0F366"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F366" style=""><pre class="r"><code class="hljs">rec &lt;- recipe(score ~ ., train) %&gt;% 
+  step_mutate(tst_dt = as.numeric(lubridate::mdy_hms(tst_dt))) %&gt;% <span class="hljs-comment"># convert `test date` variable to a date </span>
+  update_role(contains(<span class="hljs-string">"id"</span>), ncessch, new_role = <span class="hljs-string">"id vars"</span>) %&gt;% <span class="hljs-comment"># declare ID variables</span>
+  step_nzv(all_predictors(), freq_cut = <span class="hljs-number">0</span>, unique_cut = <span class="hljs-number">0</span>) %&gt;% <span class="hljs-comment"># remove variables with zero variances</span>
+  step_novel(all_nominal()) %&gt;% <span class="hljs-comment"># prepares test data to handle previously unseen factor levels </span>
+  step_unknown(all_nominal()) %&gt;% <span class="hljs-comment"># categorizes missing categorical data (NA's) as `unknown`</span>
+  step_medianimpute(all_numeric(), -all_outcomes(), -has_role(<span class="hljs-string">"id vars"</span>))  %&gt;% <span class="hljs-comment"># replaces missing numeric observations with the median</span>
+  step_dummy(all_nominal(), -has_role(<span class="hljs-string">"id vars"</span>)) <span class="hljs-comment"># dummy codes categorical variables</span></code></pre></div>
+</div>
+<div id="create-a-model" class="section level1">
+<h1 class="hasAnchor">Create a model<a href="#create-a-model" class="anchor-section"></a></h1>
+<p>The last step before bringing in our data is to specify our model. This will call upon functions from the <code>{parsnip}</code>
+ package, which standardizes language for specifying a multitude of 
+statistical models. There are a few core elements that you will need to 
+specify for each model</p>
+<div id="the-type-of-model" class="section level2">
+<h2 class="hasAnchor">The type of model<a href="#the-type-of-model" class="anchor-section"></a></h2>
+<p>This indicates what type of model you choose to fit, each of which 
+will be a different function. We’ll be focusing on decision tree methods
+ using <code>bag_tree()</code>, <code>random_forest()</code>, and <code>boost_tree()</code>. A full list of models can be found here <a href="https://www.tidymodels.org/find/parsnip/" class="uri">https://www.tidymodels.org/find/parsnip/</a></p>
+</div>
+<div id="the-engine" class="section level2">
+<h2 class="hasAnchor">The engine<a href="#the-engine" class="anchor-section"></a></h2>
+<p><code>set_engine()</code> calls the package to support the model you specified above.</p>
+</div>
+<div id="the-mode" class="section level2">
+<h2 class="hasAnchor">The mode<a href="#the-mode" class="anchor-section"></a></h2>
+<p><code>set_mode()</code> indicates the type of prediction you’d like 
+to use in your model, you’ll choose between regression and 
+classification. Since we are looking to predict student scores, which is
+ a continuous predictor, we’ll be choosing regression.</p>
+</div>
+<div id="the-arguments" class="section level2">
+<h2 class="hasAnchor">The arguments<a href="#the-arguments" class="anchor-section"></a></h2>
+<p><code>set_args()</code> allows you to set values for various 
+parameters for your model, each model type will have a specific set of 
+parameters that can be altered. For these parameters, you can either set
+ a particular value or you can use the tune function to search for the 
+optimal value of each parameter. Tuning requires a few extra steps, so 
+we will leave the default arguments for clarity. For more information on
+ tuning check out <a href="https://tune.tidymodels.org/" class="uri">https://tune.tidymodels.org/</a>.</p>
+</div>
+</div>
+<div id="create-a-workflow" class="section level1">
+<h1 class="hasAnchor">Create a workflow<a href="#create-a-workflow" class="anchor-section"></a></h1>
+<p>Up to this point we’ve been setting up a lot of individual elements 
+and now it is time to combine them to create a cohesive framework, 
+called a <em>workflow</em>, so we can run our desired models. First, we’ll use the <code>workflow()</code>
+ command and then we’ll pulling the recipe and model we already created.
+ The next section shows three examples of specifying models and creating
+ a workflow for different decision tree methods.</p>
+</div>
+<div id="model-examples" class="section level1">
+<h1 class="hasAnchor">Model Examples<a href="#model-examples" class="anchor-section"></a></h1>
+<div id="bagged-trees" class="section level2">
+<h2 class="hasAnchor">Bagged trees<a href="#bagged-trees" class="anchor-section"></a></h2>
+<p>A bagged tree approach creates multiple subsets of data from the 
+training set which are randomly chosen with replacement. Each subset of 
+data is used to train a given decision tree. In the end, we have an 
+ensemble of different models. The predictions from all the different 
+trees are averaged together, giving us a stronger prediction than one 
+tree could independently.</p>
+<div id="specify-model" class="section level3">
+<h3 class="hasAnchor">Specify model<a href="#specify-model" class="anchor-section"></a></h3>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F367" aria-expanded="true" aria-controls="rcode-643E0F367"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F367" style=""><pre class="r"><code class="hljs">set.seed(<span class="hljs-number">100</span>)
+mod_bag &lt;- bag_tree() %&gt;%
+  set_mode(<span class="hljs-string">"regression"</span>) %&gt;%
+  set_engine(<span class="hljs-string">"rpart"</span>, times = <span class="hljs-number">10</span>) <span class="hljs-comment"># 10 bootstrap resamples</span></code></pre></div>
+</div>
+<div id="create-workflow" class="section level3">
+<h3 class="hasAnchor">Create workflow<a href="#create-workflow" class="anchor-section"></a></h3>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F368" aria-expanded="true" aria-controls="rcode-643E0F368"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F368" style=""><pre class="r"><code class="hljs">wflow_bag &lt;- workflow() %&gt;% 
+  add_recipe(rec) %&gt;%
+  add_model(mod_bag)</code></pre></div>
+</div>
+<div id="fit-the-model" class="section level3">
+<h3 class="hasAnchor">Fit the model<a href="#fit-the-model" class="anchor-section"></a></h3>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F369" aria-expanded="true" aria-controls="rcode-643E0F369"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F369" style=""><pre class="r"><code class="hljs">set.seed(<span class="hljs-number">100</span>)
+plan(multisession)
+
+fit_bag &lt;- fit_resamples(
+  wflow_bag,
+  cv,
+  metrics = metric_set(rmse, rsq),
+  control = control_resamples(verbose = <span class="hljs-literal">TRUE</span>,
+                              save_pred = <span class="hljs-literal">TRUE</span>,
+                              extract = <span class="hljs-keyword">function</span>(x) extract_model(x)))</code></pre></div>
+</div>
+<div id="visualize" class="section level3">
+<h3 class="hasAnchor">Visualize<a href="#visualize" class="anchor-section"></a></h3>
+<p>The plot below shows the root nodes from a bagged tree made of 100 
+trees (10 folds x 10 bootstrapped resamples). Root nodes are the 1st 
+node in a decision tree, and they are determined by which variable best 
+optimizes a loss function (e.g., minimizes mean square error [MSE] for 
+continuous outcomes or Gini Index for categorical outcomes). Put 
+roughly, the most common root nodes can be thought of as the most 
+“important” predictors.</p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3610" aria-expanded="true" aria-controls="rcode-643E0F3610"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F3610" style=""><pre class="r"><code class="hljs"><span class="hljs-comment"># extract roots</span>
+bag_roots &lt;-  <span class="hljs-keyword">function</span>(x){
+  x %&gt;% 
+  select(.extracts) %&gt;% 
+  unnest(cols = c(.extracts)) %&gt;% 
+  mutate(models = map(.extracts,
+                  ~.x$model_df)) %&gt;% 
+  select(-.extracts) %&gt;% 
+  unnest(cols = c(models)) %&gt;% 
+  mutate(root = map_chr(model,
+                     ~as.character(.x$fit$frame[<span class="hljs-number">1</span>, <span class="hljs-number">1</span>]))) %&gt;%
+  select(root)  
+}
+
+<span class="hljs-comment"># plot</span>
+bag_roots(fit_bag) %&gt;% 
+  ggplot(mapping = aes(x = fct_rev(fct_infreq(root)))) + 
+  geom_bar() + 
+  coord_flip() + 
+  labs(x = <span class="hljs-string">"root"</span>, y = <span class="hljs-string">"count"</span>)</code></pre></div>
+<p><img src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/unnamed-chunk-11-1.png" width="672"></p>
+</div>
+</div>
+<div id="random-forest" class="section level2">
+<h2 class="hasAnchor">Random forest<a href="#random-forest" class="anchor-section"></a></h2>
+<p>Random forest is similar to bagged tree methodology but goes one step
+ further. In addition to taking random subsets of data, the model also 
+draws a random selection of features. Instead of utilizing all features,
+ the random subset of features allows more predictors to be eligible 
+root nodes. This is particularly useful for handling high dimensionality
+ data (e.g., have more variables than participants/cases).</p>
+<div id="specify-the-model" class="section level3">
+<h3 class="hasAnchor">Specify the model<a href="#specify-the-model" class="anchor-section"></a></h3>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3611" aria-expanded="true" aria-controls="rcode-643E0F3611"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F3611" style=""><pre class="r"><code class="hljs">set.seed(<span class="hljs-number">100</span>)
+mod_rf &lt;-rand_forest() %&gt;%
+  set_engine(<span class="hljs-string">"ranger"</span>,
+             num.threads = parallel::detectCores(), 
+             importance = <span class="hljs-string">"permutation"</span>, 
+             verbose = <span class="hljs-literal">TRUE</span>) %&gt;% 
+  set_mode(<span class="hljs-string">"regression"</span>) %&gt;% 
+  set_args(trees = <span class="hljs-number">1000</span>)</code></pre></div>
+</div>
+<div id="create-workflow-1" class="section level3">
+<h3 class="hasAnchor">Create workflow<a href="#create-workflow-1" class="anchor-section"></a></h3>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3612" aria-expanded="true" aria-controls="rcode-643E0F3612"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F3612" style=""><pre class="r"><code class="hljs">wflow_rf &lt;- workflow() %&gt;% 
+  add_model(mod_rf) %&gt;% 
+  add_recipe(rec)</code></pre></div>
+</div>
+<div id="fit-the-model-1" class="section level3">
+<h3 class="hasAnchor">Fit the model<a href="#fit-the-model-1" class="anchor-section"></a></h3>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3613" aria-expanded="true" aria-controls="rcode-643E0F3613"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F3613" style=""><pre class="r"><code class="hljs">set.seed(<span class="hljs-number">100</span>)
+plan(multisession)
+
+fit_rf &lt;- fit_resamples(
+  wflow_rf,
+  cv,
+  metrics = metric_set(rmse, rsq),
+  control = control_resamples(verbose = <span class="hljs-literal">TRUE</span>,
+                              save_pred = <span class="hljs-literal">TRUE</span>,
+                              extract = <span class="hljs-keyword">function</span>(x) x)
+)</code></pre></div>
+</div>
+<div id="visualize-1" class="section level3">
+<h3 class="hasAnchor">Visualize<a href="#visualize-1" class="anchor-section"></a></h3>
+<p>The plot below shows the root nodes from a random forest with 1000 trees (specified using <code>set_args(trees = 1000)</code> in the parsnip model object).</p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3614" aria-expanded="true" aria-controls="rcode-643E0F3614"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F3614" style=""><pre class="r"><code class="hljs"><span class="hljs-comment"># extract roots</span>
+rf_tree_roots &lt;- <span class="hljs-keyword">function</span>(x){
+  map_chr(<span class="hljs-number">1</span>:<span class="hljs-number">1000</span>, 
+           ~ranger::treeInfo(x, tree = .)[<span class="hljs-number">1</span>, <span class="hljs-string">"splitvarName"</span>])
+}
+
+rf_roots &lt;- <span class="hljs-keyword">function</span>(x){
+  x %&gt;% 
+  select(.extracts) %&gt;% 
+  unnest(cols = c(.extracts)) %&gt;% 
+  mutate(fit = map(.extracts,
+                   ~.x$fit$fit$fit),
+         oob_rmse = map_dbl(fit,
+                         ~sqrt(.x$prediction.error)),
+         roots = map(fit, 
+                        ~rf_tree_roots(.))
+         ) %&gt;% 
+  select(roots) %&gt;% 
+  unnest(cols = c(roots))
+}
+
+<span class="hljs-comment"># plot</span>
+rf_roots(fit_rf) %&gt;% 
+  group_by(roots) %&gt;% 
+  count() %&gt;% 
+  arrange(desc(n)) %&gt;% 
+  filter(n &gt; <span class="hljs-number">75</span>) %&gt;% 
+  ggplot(aes(fct_reorder(roots, n), n)) +
+           geom_col() + 
+           coord_flip() + 
+  labs(x = <span class="hljs-string">"root"</span>, y = <span class="hljs-string">"count"</span>)</code></pre></div>
+<p><img src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/unnamed-chunk-15-1.png" width="672"></p>
+</div>
+</div>
+<div id="boosted-trees" class="section level2">
+<h2 class="hasAnchor">Boosted trees<a href="#boosted-trees" class="anchor-section"></a></h2>
+<p>Boosted trees, like bagged trees, are an ensemble model. Instead of 
+applying successive models to resampled data and pooling estimates, 
+boosted trees fit the next tree to the residuals (i.e., error term) of 
+the prior tree. The goal is to minimize residual error through multiple 
+trees, and is typically done with fairly “shallow” decision tree (i.e., 
+1-6 splits in each tree). Though each model is only slightly improving 
+the error rate, the sequential use of many shallow trees makes 
+computationally efficient (i.e.&nbsp;reduced run time) and highly 
+accurate predictions.</p>
+<div id="specify-the-model-1" class="section level3">
+<h3 class="hasAnchor">Specify the model<a href="#specify-the-model-1" class="anchor-section"></a></h3>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3615" aria-expanded="true" aria-controls="rcode-643E0F3615"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F3615" style=""><pre class="r"><code class="hljs">mod_boost &lt;- boost_tree() %&gt;% 
+  set_engine(<span class="hljs-string">"xgboost"</span>, nthreads = parallel::detectCores()) %&gt;% 
+  set_mode(<span class="hljs-string">"regression"</span>)</code></pre></div>
+</div>
+<div id="create-workflow-2" class="section level3">
+<h3 class="hasAnchor">Create workflow<a href="#create-workflow-2" class="anchor-section"></a></h3>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3616" aria-expanded="true" aria-controls="rcode-643E0F3616"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F3616" style=""><pre class="r"><code class="hljs">wflow_boost &lt;- workflow() %&gt;% 
+  add_recipe(rec) %&gt;% 
+  add_model(mod_boost)</code></pre></div>
+</div>
+<div id="fit-the-model-2" class="section level3">
+<h3 class="hasAnchor">Fit the model<a href="#fit-the-model-2" class="anchor-section"></a></h3>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3617" aria-expanded="true" aria-controls="rcode-643E0F3617"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F3617" style=""><pre class="r"><code class="hljs">set.seed(<span class="hljs-number">100</span>)
+plan(multisession)
+
+fit_boost &lt;- fit_resamples(
+  wflow_boost, 
+  cv,
+  metrics = metric_set(rmse, rsq),
+  control = control_resamples(verbose = <span class="hljs-literal">TRUE</span>,
+                              save_pred = <span class="hljs-literal">TRUE</span>)
+)</code></pre></div>
+</div>
+<div id="visualize-2" class="section level3">
+<h3 class="hasAnchor">Visualize<a href="#visualize-2" class="anchor-section"></a></h3>
+<p>One of the few downfalls of <code>{tidymodels}</code> is its 
+(current) inability to plot these tree-based models. For the past two 
+models, it was simpler to extract root nodes and plot them, but their 
+interpretation (as we’re fitting to residuals instead of data sets) are 
+not straightforward. For that reason, we don’t have any pretty plots 
+here. Instead, we’ll skip to evaluating the metrics of all models.</p>
+</div>
+</div>
+</div>
+<div id="evaluate-metrics" class="section level1">
+<h1 class="hasAnchor">Evaluate metrics<a href="#evaluate-metrics" class="anchor-section"></a></h1>
+<p>After running these three models, it’s time to evaluate their performance. We can do this with <code>tune::collect_metrics()</code>. The table below shows the estimate of the out-of-sample performance for each of our 3 models.</p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3618" aria-expanded="true" aria-controls="rcode-643E0F3618"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F3618" style=""><pre class="r"><code class="hljs">collect_metrics(fit_bag) %&gt;% 
+  bind_rows(collect_metrics(fit_rf)) %&gt;%
+  bind_rows(collect_metrics(fit_boost)) %&gt;% 
+  filter(.metric == <span class="hljs-string">"rmse"</span>) %&gt;% 
+  mutate(model = c(<span class="hljs-string">"bag"</span>, <span class="hljs-string">"rf"</span>, <span class="hljs-string">"boost"</span>)) %&gt;% 
+  select(model, everything()) %&gt;% 
+  knitr::kable()</code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">model</th>
+<th align="left">.metric</th>
+<th align="left">.estimator</th>
+<th align="right">mean</th>
+<th align="right">n</th>
+<th align="right">std_err</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">bag</td>
+<td align="left">rmse</td>
+<td align="left">standard</td>
+<td align="right">98.42890</td>
+<td align="right">10</td>
+<td align="right">2.504904</td>
+</tr>
+<tr class="even">
+<td align="left">rf</td>
+<td align="left">rmse</td>
+<td align="left">standard</td>
+<td align="right">95.20828</td>
+<td align="right">10</td>
+<td align="right">3.466279</td>
+</tr>
+<tr class="odd">
+<td align="left">boost</td>
+<td align="left">rmse</td>
+<td align="left">standard</td>
+<td align="right">95.35888</td>
+<td align="right">10</td>
+<td align="right">2.764773</td>
+</tr>
+</tbody>
+</table>
+<p>Here, we are faced with a common problem in the machine learning 
+world: choosing between models that perform similarly (see overlapping 
+standard errors). Whether we would prefer random forests or bagged trees
+ may depend on computational efficiency (i.e., time) or other factors. 
+In practice, tuning several hyperparameters may have made one model 
+clearly preferable over the others, but in our case - relying on all 
+defaults - we would probably have similar performance with both models 
+on a new data set and would prefer random forest or boosted tree models 
+for their efficiency.</p>
+</div>
+<div id="out-of-sample-performance" class="section level1">
+<h1 class="hasAnchor">Out-of-sample performance<a href="#out-of-sample-performance" class="anchor-section"></a></h1>
+<p>The final step is to apply each trained model to our test data using <code>last_fit()</code>.</p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3619" aria-expanded="true" aria-controls="rcode-643E0F3619"><span>Hide</span></button></div></div><div class="r-code-collapse collapse show" id="rcode-643E0F3619" style=""><pre class="r"><code class="hljs"><span class="hljs-comment"># bagged trees</span>
+final_fit_bag &lt;- last_fit(
+  wflow_bag,
+  split = split
+)
+
+<span class="hljs-comment"># random forest</span>
+final_fit_rf &lt;- last_fit(
+  wflow_rf,
+  split = split
+)
+
+<span class="hljs-comment"># boosted trees</span>
+final_fit_boost &lt;- last_fit(
+  wflow_boost,
+  split = split
+)</code></pre></div>
+<p>The table below shows the actual out-of-sample performance for each of our 3 models.</p>
+<div class="row"><div class="col-md-12"><button type="button" class="btn btn-light btn-lg code-folding-btn pull-right" data-toggle="collapse" data-target="#rcode-643E0F3620" aria-expanded="true" aria-controls="rcode-643E0F3620"><span>Hide</span></button></div></div><div class="collapse r-code-collapse" id="rcode-643E0F3620"><pre class="r"><code class="hljs"><span class="hljs-comment"># show performance on test data</span>
+collect_metrics(final_fit_bag) %&gt;% 
+  bind_rows(collect_metrics(final_fit_rf)) %&gt;%
+  bind_rows(collect_metrics(final_fit_boost)) %&gt;% 
+  filter(.metric == <span class="hljs-string">"rmse"</span>) %&gt;% 
+  mutate(model = c(<span class="hljs-string">"bag"</span>, <span class="hljs-string">"rf"</span>, <span class="hljs-string">"boost"</span>)) %&gt;% 
+  select(model, everything()) %&gt;% 
+  knitr::kable()</code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">model</th>
+<th align="left">.metric</th>
+<th align="left">.estimator</th>
+<th align="right">.estimate</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">bag</td>
+<td align="left">rmse</td>
+<td align="left">standard</td>
+<td align="right">93.36504</td>
+</tr>
+<tr class="even">
+<td align="left">rf</td>
+<td align="left">rmse</td>
+<td align="left">standard</td>
+<td align="right">91.18114</td>
+</tr>
+<tr class="odd">
+<td align="left">boost</td>
+<td align="left">rmse</td>
+<td align="left">standard</td>
+<td align="right">94.22609</td>
+</tr>
+</tbody>
+</table>
+<p>After applying our 3 trained models to the unseen test data, it looks
+ like random forest is the winner since it has the lowest RMSE. In this 
+example, we only used 1% of the data to train these models, which could 
+make it difficult to meaningfully compare their performance. However, 
+the random forest model also results in the best out-of-sample 
+prediction (RMSE = 83.47) when using all of the available data, which we
+ did for the <a href="https://www.kaggle.com/c/edld-654-spring-2020/leaderboard">Kaggle competition</a>.</p>
+<details>
+<p></p><summary>Session Info</summary><p></p>
+<pre><code class="hljs shell"><span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment"># ─ Session info ───────────────────────────────────────────────────────────────</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  setting  value                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  version  R version 3.6.2 (2019-12-12)</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  os       macOS Catalina 10.15.6      </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  system   x86_64, darwin15.6.0        </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  ui       X11                         </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  language (EN)                        </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  collate  en_US.UTF-8                 </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  ctype    en_US.UTF-8                 </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tz       America/Los_Angeles         </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  date     2020-10-26                  </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment"># </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment"># ─ Packages ───────────────────────────────────────────────────────────────────</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  package       * version    date       lib</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  assertthat      0.2.1      2019-03-21 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  backports       1.1.10     2020-09-15 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  baguette      * 0.0.1      2020-04-14 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  base64enc       0.1-3      2015-07-28 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  bayesplot       1.7.1      2019-12-01 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  blogdown        0.17       2019-11-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  bookdown        0.21       2020-10-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  boot            1.3-24     2019-12-20 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  broom         * 0.5.5      2020-02-29 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  C50             0.1.3      2020-01-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  callr           3.5.1      2020-10-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  cellranger      1.1.0      2016-07-27 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  class           7.3-15     2019-01-01 [2]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  cli             2.1.0      2020-10-12 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  codetools       0.2-16     2018-12-24 [2]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  colorspace      1.4-1      2019-03-18 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  colourpicker    1.0        2017-09-27 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  corrplot        0.84       2017-10-16 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  crayon          1.3.4      2017-09-16 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  crosstalk       1.1.0.1    2020-03-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  Cubist          0.2.3      2020-01-10 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  data.table      1.12.8     2019-12-09 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  DBI             1.1.0      2019-12-15 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  dbplyr          1.4.2      2019-06-17 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  dials         * 0.0.8.9000 2020-07-23 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  DiceDesign      1.8-1      2019-07-31 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  digest          0.6.27     2020-10-24 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  dplyr         * 1.0.2      2020-08-18 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  DT              0.16       2020-10-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  dygraphs        1.1.1.6    2018-07-11 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  earth           5.1.2      2019-11-09 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  ellipsis        0.3.1      2020-05-15 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  evaluate        0.14       2019-05-28 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  fansi           0.4.1      2020-01-08 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  farver          2.0.3      2020-01-16 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  fastmap         1.0.1      2019-10-08 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  forcats       * 0.4.0      2019-02-17 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  foreach         1.5.0      2020-03-30 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  Formula         1.2-3      2018-05-03 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  fs              1.3.1      2019-05-06 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  furrr           0.1.0      2018-05-16 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  future        * 1.18.0     2020-07-09 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  generics        0.0.2      2018-11-29 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  ggplot2       * 3.3.2      2020-06-19 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  ggridges        0.5.2      2020-01-12 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  globals         0.12.5     2019-12-07 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  glue            1.4.2      2020-08-27 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  gower           0.2.2      2020-06-23 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  GPfit           1.0-8      2019-02-08 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  gridExtra       2.3        2017-09-09 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  gtable          0.3.0      2019-03-25 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  gtools          3.8.1      2018-06-26 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  hardhat         0.1.4      2020-07-02 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  haven           2.2.0      2019-11-08 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  highr           0.8        2019-03-20 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  hms             0.5.3      2020-01-08 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  htmltools       0.5.0      2020-06-16 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  htmlwidgets     1.5.2      2020-10-03 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  httpuv          1.5.4      2020-06-06 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  httr            1.4.2      2020-07-20 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  igraph          1.2.4.2    2019-11-27 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  infer         * 0.5.1      2019-11-19 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  inline          0.3.15     2018-05-18 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  inum            1.0-1      2019-04-25 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  ipred           0.9-9      2019-04-28 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  iterators       1.0.12     2019-07-26 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  janeaustenr     0.1.5      2017-06-10 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  jsonlite        1.7.1      2020-09-07 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  knitr           1.30       2020-09-22 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  labeling        0.4.2      2020-10-20 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  later           1.1.0.1    2020-06-05 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  lattice         0.20-38    2018-11-04 [2]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  lava            1.6.7      2020-03-05 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  lhs             1.0.2      2020-04-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  libcoin         1.0-5      2019-08-27 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  lifecycle       0.2.0      2020-03-06 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  listenv         0.8.0      2019-12-05 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  lme4            1.1-21     2019-03-05 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  loo             2.2.0      2019-12-19 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  lubridate       1.7.9      2020-06-08 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  magrittr        1.5        2014-11-22 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  markdown        1.1        2019-08-07 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  MASS            7.3-51.4   2019-03-31 [2]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  Matrix          1.2-18     2019-11-27 [2]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  matrixStats     0.56.0     2020-03-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  mime            0.9        2020-02-04 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  miniUI          0.1.1.1    2018-05-18 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  minqa           1.2.4      2014-10-09 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  modelr          0.1.6      2020-02-22 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  munsell         0.5.0      2018-06-12 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  mvtnorm         1.1-0      2020-02-24 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  nlme            3.1-142    2019-11-07 [2]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  nloptr          1.2.2.1    2020-03-11 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  nnet            7.3-12     2016-02-02 [2]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  parsnip       * 0.1.2.9000 2020-07-17 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  partykit        1.2-7      2020-03-06 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  pillar          1.4.6      2020-07-10 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  pkgbuild        1.1.0      2020-07-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  pkgconfig       2.0.3      2019-09-22 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  plotmo          3.5.7      2020-04-15 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  plotrix         3.7-8      2020-04-16 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  plyr            1.8.6      2020-03-03 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  prettyunits     1.1.1      2020-01-24 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  pROC            1.16.2     2020-03-19 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  processx        3.4.4      2020-09-03 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  prodlim         2019.11.13 2019-11-17 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  promises        1.1.1      2020-06-09 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  ps              1.4.0      2020-10-07 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  purrr         * 0.3.4      2020-04-17 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  R6              2.4.1      2019-11-12 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  ranger          0.12.1     2020-01-10 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  Rcpp            1.0.5      2020-07-06 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  readr         * 1.3.1      2018-12-21 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  readxl          1.3.1      2019-03-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  recipes       * 0.1.13     2020-06-23 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  repr            1.1.0      2020-01-28 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  reprex          0.3.0      2019-05-16 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  reshape2        1.4.3      2017-12-11 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  rlang           0.4.8      2020-10-08 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  rmarkdown       2.5        2020-10-21 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  rpart           4.1-15     2019-04-12 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  rsample       * 0.0.7      2020-06-04 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  rsconnect       0.8.16     2019-12-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  rstan           2.19.3     2020-02-11 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  rstanarm        2.19.2     2019-10-03 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  rstantools      2.0.0      2019-09-15 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  rstudioapi      0.11       2020-02-07 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  rvest           0.3.5      2019-11-08 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  scales        * 1.1.1      2020-05-11 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  sessioninfo     1.1.1      2018-11-05 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  shiny           1.5.0      2020-06-23 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  shinyjs         1.1        2020-01-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  shinystan       2.5.0      2018-05-01 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  shinythemes     1.1.2      2018-11-06 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  skimr         * 2.1.1      2020-04-16 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  SnowballC       0.6.0      2019-01-15 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  StanHeaders     2.21.0-1   2020-01-19 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  stringi         1.5.3      2020-09-09 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  stringr       * 1.4.0      2019-02-10 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  survival        3.1-8      2019-12-03 [2]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  TeachingDemos   2.12       2020-04-07 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  threejs         0.3.3      2020-01-21 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tibble        * 3.0.4      2020-10-12 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tidymodels    * 0.1.0      2020-02-16 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tidyposterior   0.0.2      2018-11-15 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tidypredict     0.4.5      2020-02-10 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tidyr         * 1.1.0      2020-05-20 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tidyselect      1.1.0      2020-05-11 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tidytext        0.2.3      2020-03-04 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tidyverse     * 1.3.0      2019-11-21 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  timeDate        3043.102   2018-02-21 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tokenizers      0.2.1      2018-03-29 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  tune          * 0.1.1.9000 2020-07-23 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  vctrs           0.3.4      2020-08-29 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  withr           2.3.0      2020-09-22 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  workflows     * 0.1.2.9000 2020-07-23 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  xfun            0.18       2020-09-29 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  xgboost       * 0.90.0.2   2019-08-01 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  xml2            1.2.2      2019-08-09 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  xtable          1.8-4      2019-04-21 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  xts             0.12-0     2020-01-19 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  yaml            2.2.1      2020-02-01 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  yardstick     * 0.0.7      2020-07-13 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  zoo             1.8-7      2020-01-10 [1]</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  source                               </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  Github (tidymodels/dials@fbea0c2)    </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  Github (tidymodels/parsnip@de6e9cd)  </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  Github (tidymodels/tune@8c280fd)     </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  Github (tidymodels/workflows@d4cbe41)</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.2)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment">#  CRAN (R 3.6.0)                       </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment"># </span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment"># [1] /Users/bcullen/Library/R/3.6/library</span></span>
+<span class="hljs-meta">#</span><span class="bash"><span class="hljs-comment"># [2] /Library/Frameworks/R.framework/Versions/3.6/Resources/library</span></span></code></pre>
+</details>
+</div>
+
+    </div>
+
+    
+
+
+
+
+
+
+
+<div class="share-box" aria-hidden="true">
+  <ul class="share">
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://twitter.com/intent/tweet?url=https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/&amp;text=Tidymodels:%20Decision%20Tree%20Learning%20in%20R" target="_blank" rel="noopener" class="share-btn-twitter">
+          <i class="fab fa-twitter"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://www.facebook.com/sharer.php?u=https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/&amp;t=Tidymodels:%20Decision%20Tree%20Learning%20in%20R" target="_blank" rel="noopener" class="share-btn-facebook">
+          <i class="fab fa-facebook"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="mailto:?subject=Tidymodels:%20Decision%20Tree%20Learning%20in%20R&amp;body=https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/" target="_blank" rel="noopener" class="share-btn-email">
+          <i class="fas fa-envelope"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://www.linkedin.com/shareArticle?url=https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/&amp;title=Tidymodels:%20Decision%20Tree%20Learning%20in%20R" target="_blank" rel="noopener" class="share-btn-linkedin">
+          <i class="fab fa-linkedin-in"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://web.whatsapp.com/send?text=Tidymodels:%20Decision%20Tree%20Learning%20in%20R%20https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/" target="_blank" rel="noopener" class="share-btn-whatsapp">
+          <i class="fab fa-whatsapp"></i>
+        </a>
+      </li>
+    
+      
+      
+      
+        
+      
+      
+      
+      <li>
+        <a href="https://service.weibo.com/share/share.php?url=https://bcullen.rbind.io/post/2020-06-02-tidymodels-decision-tree-learning-in-r/&amp;title=Tidymodels:%20Decision%20Tree%20Learning%20in%20R" target="_blank" rel="noopener" class="share-btn-weibo">
+          <i class="fab fa-weibo"></i>
+        </a>
+      </li>
+    
+  </ul>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+  
+  
+  
+    
+  
+  
+  
+  <div class="media author-card content-widget-hr">
+    
+      
+      <img class="avatar mr-3 avatar-circle" src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/avatar_hue4061dab9af150946e172a410a9c07a4_141498_270x270_fil.jpg" alt="Avatar">
+    
+
+    <div class="media-body">
+      <h5 class="card-title"><a href="https://bcullen.rbind.io/">Brendan Cullen</a></h5>
+      <h6 class="card-subtitle">Doctoral Student | NSF GRFP Fellow</h6>
+      <p class="card-text">Psychology PhD student and aspiring data scientist studying precision medicine approaches to health behavior change.</p>
+      <ul class="network-icon" aria-hidden="true">
+  
+    
+    
+    
+      
+    
+    
+    
+    
+    
+    <li>
+      <a href="mailto:bcullen@uoregon.edu">
+        <i class="fas fa-envelope"></i>
+      </a>
+    </li>
+  
+    
+    
+    
+      
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="https://twitter.com/_bcullen" target="_blank" rel="noopener">
+        <i class="fab fa-twitter"></i>
+      </a>
+    </li>
+  
+    
+    
+    
+      
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="https://github.com/brendanhcullen" target="_blank" rel="noopener">
+        <i class="fab fa-github"></i>
+      </a>
+    </li>
+  
+    
+    
+    
+      
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="https://www.linkedin.com/in/bcull/" target="_blank" rel="noopener">
+        <i class="fab fa-linkedin-in"></i>
+      </a>
+    </li>
+  
+    
+    
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="https://scholar.google.com/citations?user=02RYe4UAAAAJ&amp;hl=en" target="_blank" rel="noopener">
+        <i class="ai ai-google-scholar"></i>
+      </a>
+    </li>
+  
+    
+    
+    
+    
+    
+    
+    
+      
+    
+    <li>
+      <a href="https://osf.io/npcuz" target="_blank" rel="noopener">
+        <i class="ai ai-osf"></i>
+      </a>
+    </li>
+  
+</ul>
+
+    </div>
+  </div>
+
+
+
+
+
+
+
+
+
+  
+  
+
+
+
+  </div>
+</article>
+
+      
+
+    
+    
+    
+      <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/jquery_002.js" integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+      <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/imagesloaded.js" integrity="sha256-lqvxZrPLtfffUl2G/e7szqSvPBILGbwmsGE1MKlOi0Q=" crossorigin="anonymous"></script>
+      <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/isotope.js" integrity="sha256-CBrpuqrMhXwcLLUd5tvQ4euBHCdh7wGlDfNz8vbu/iI=" crossorigin="anonymous"></script>
+      <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/jquery.js" integrity="sha256-yt2kYMy0w8AbtF89WXb2P1rfjcP/HTHLT7097U8Y5b8=" crossorigin="anonymous"></script>
+
+      
+
+      
+        
+        <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/highlight.js" integrity="sha256-1zu+3BnLYV9LdiY85uXMzii3bdrkelyp37e0ZyTAQh0=" crossorigin="anonymous"></script>
+        
+        <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/r.js"></script>
+        
+      
+
+    
+
+    
+    
+      <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/leaflet.js" integrity="sha256-EErZamuLefUnbMBQbsEqu1USa+btR2oIlCpBJbyD4/g=" crossorigin="anonymous"></script>
+    
+
+    
+    
+    <script>const code_highlighting = true;</script>
+    
+
+    
+    
+    
+    
+    
+    
+    <script>
+      const search_config = {"indexURI":"/index.json","minLength":1,"threshold":0.3};
+      const i18n = {"no_results":"No results found","placeholder":"Search...","results":"results found"};
+      const content_type = {
+        'post': "Posts",
+        'project': "Projects",
+        'publication' : "Publications",
+        'talk' : "Talks"
+        };
+    </script>
+    
+
+    
+    
+
+    
+    
+    <script id="search-hit-fuse-template" type="text/x-template">
+      <div class="search-hit" id="summary-{{key}}">
+      <div class="search-hit-content">
+        <div class="search-hit-name">
+          <a href="{{relpermalink}}">{{title}}</a>
+          <div class="article-metadata search-hit-type">{{type}}</div>
+          <p class="search-hit-description">{{snippet}}</p>
+        </div>
+      </div>
+      </div>
+    </script>
+    
+
+    
+    
+    <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/fuse.js" integrity="sha256-VzgmKYmhsGNNN4Ph1kMW+BjoYJM2jV5i4IlFoeZA9XI=" crossorigin="anonymous"></script>
+    <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/jquery_003.js" integrity="sha256-4HLtjeVgH0eIB3aZ9mLYF6E8oU5chNdjU6p6rrXpl9U=" crossorigin="anonymous"></script>
+    
+
+    
+    
+
+    
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+      
+    
+    
+    
+    
+    <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/academic.js"></script>
+
+    
+
+
+
+
+
+
+  
+  
+  <div class="container">
+    <footer class="site-footer">
+  
+  
+  
+   
+  <script>
+  $(document).ready(function () {
+    window.initializeCodeFolding("show" === "show");
+  });
+  </script>
+  <script src="Tidymodels%20Decision%20Tree%20Learning%20in%20R%20|%20Brendan%20Cullen_files/codefolding.js"></script>
+
+
+  <p class="powered-by">
+    © 2021 · 
+
+    Powered by the
+    <a href="https://sourcethemes.com/academic/" target="_blank" rel="noopener">Academic theme</a> for
+    <a href="https://gohugo.io/" target="_blank" rel="noopener">Hugo</a>.
+
+    
+    <span class="float-right" aria-hidden="true">
+      <a href="#" class="back-to-top">
+        <span class="button_icon">
+          <i class="fas fa-chevron-up fa-2x"></i>
+        </span>
+      </a>
+    </span>
+    
+  </p>
+</footer>
+
+  </div>
+  
+
+  
+<div id="modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Cite</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <pre><code class="tex hljs"></code></pre>
+      </div>
+      <div class="modal-footer">
+        <a class="btn btn-outline-primary my-1 js-copy-cite" href="#" target="_blank">
+          <i class="fas fa-copy"></i> Copy
+        </a>
+        <a class="btn btn-outline-primary my-1 js-download-cite" href="#" target="_blank">
+          <i class="fas fa-download"></i> Download
+        </a>
+        <div id="modal-error"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+</body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>

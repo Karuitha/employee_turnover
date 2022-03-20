@@ -388,6 +388,7 @@ In this step,Wecreate a traing and testing set. The training set has 75% of the 
 ```{r}
 
 ## Create a split object consisting 75% of data
+set.seed(200)
 split_object <- initial_split(df, prop = 0.75, 
                               
                               strata = left)
@@ -425,10 +426,10 @@ df_recipe <- recipes::recipe(left ~ .,
                         
                         over_ratio = 1, 
                         
-                        seed = 500) %>%
+                        seed = 200) %>%
   
   ##We make all character variables factors
-  step_string2factor(all_nominal_predictors()) %>%
+  step_dummy(all_nominal_predictors()) %>%
   
   ##We remove one in a pair of highly correlated variables
   ## The threshold for removal is 0.85 (absolute) 
@@ -474,9 +475,13 @@ logistic_model <- logistic_reg() %>%
 Next,We fit the model on the training set.
 
 ```{r, results='asis'}
-logistic_results <- logistic_model %>%
+logistic_results <- workflow() %>% 
   
-  fit(left ~ ., data = df_baked_train)
+  add_model(logistic_model) %>%
+  
+  add_recipe(df_recipe) %>% 
+  
+  fit(data = df_train)
 
 ## Show coefficients table with stars for statistical significance
 stargazer::stargazer(glm(left ~ ., data = df_baked_train, 
@@ -537,7 +542,10 @@ df_test_bind %>%
   conf_mat(truth = left, 
            
            estimate = .pred_class) %>% 
-  autoplot(type = "mosaic")
+  
+  autoplot(type = "mosaic") + 
+  
+  labs(title = "Visualization of Confusion Matrix")
 ################################################
 df_test_bind %>% 
   
@@ -545,7 +553,13 @@ df_test_bind %>%
            
            estimate = .pred_class) %>% 
   
-  summary()
+  summary() %>% 
+  
+  kbl(., booktabs = TRUE, 
+      
+      caption = "Statistics for Logistic Regression") %>%
+  
+  kable_classic(position = "left", full_width = FALSE)
 ```
 
 Figure below shows the area under curve
@@ -559,40 +573,302 @@ df_test_bind %>%
   
   roc_curve(truth = left, .pred_yes) %>% 
   
-  autoplot()
+  autoplot() + 
+  
+  labs(title = "ROC Curve for Logit Model (ROC AUC = 0.701)")
 ```
 
 
-## The Decision Tree Model
+```{r}
+logistic_results %>% 
+  
+extract_fit_engine() %>% 
+  
+  vip() + 
+  
+  labs(title = "Variable Importance: Logit Model")
+```
+
+
+
+## Decision Tree Model
+
+We can define decision trees succinctly as follows;
+
+>[A decision tree is a decision support tool that uses a tree-like model of decisions and their possible consequences, including chance event outcomes, resource costs, and utility. It is one way to display an algorithm that only contains conditional control statements](https://en.wikipedia.org/wiki/Decision_tree). 
+
+The Corporate Finance Institute also offer a definition that allows us to better visualise the structure of decision trees. 
+
+>[A decision tree is a support tool with a tree-like structure that models probable outcomes, cost of resources, utilities, and possible consequences. Decision trees provide a way to present algorithms with conditional control statements. They include branches that represent decision-making steps that can lead to a favorable result](https://corporatefinanceinstitute.com/resources/knowledge/other/decision-tree/).
+
+Typically, a decision tree model uses recursive partitioning. Each partition arises from a decision. There are two key types of nodes. 
+
+- The decision node: This is a node where a decision is made and a split occurs. Typically, a decision tree will split the data multiple times based on certain cut offs in the features or independent [variables](https://christophm.github.io/interpretable-ml-book/tree.html). 
+- Terminal node: These are nodes that come last. They signify the peak of the tree branch and point to a decision. 
+
+Decision trees are easy to build, read, and interpret. Also, decision trees require less data cleaning as they are minimally affected by missing values and outliers. However, decision trees can be unstable with slight changes in data and are prone to over fitting. Finally, decision trees may not be very effective when dealing with a continuous dependent variable. Hence, it is critical to tune hyper parameters for decision trees. In particular, the following parameters key:
+
+- Tree depth:
+- Cost complexity:
 
 
 ```{r}
-decision_tree_model <- decision_tree() %>% 
+decision_tree_model <- decision_tree(
+  
+  cost_complexity = tune(),
+  
+  tree_depth = tune()
+  
+) %>% 
   
   set_engine("rpart") %>% 
   
   set_mode("classification")
 ```
 
+Next, we create a grid of values (for cost complexity and tree depth) that we shall test. The output will allow us to pick the optimal parameters. Here, R and Tidymodels pick several values that we use to tune parameters. In this case we have asked for 10 of each. 
+
+```{r}
+tree_grid <- grid_regular(
+  
+  cost_complexity(),
+  
+  tree_depth(),
+  
+  levels = 5
+)
+
+head(tree_grid)
+```
+
+Next, we create cross validation folds in the training data. We shall use these folds to tune the parameters. 
+
+```{r}
+set.seed(200)
+cell_folds <- vfold_cv(df_train)
+```
+
+We then fit the model to the folds by defining a workflow. 
+
+```{r}
+tree_wf <- workflow() %>% 
+  
+  add_recipe(df_recipe) %>% 
+  
+  add_model(decision_tree_model)
+
+
+tree_tune <- tree_wf %>% 
+  
+  tune_grid(
+    
+    resamples = cell_folds,
+    
+    grid = tree_grid
+    
+  )
+```
+
+We can now see the metrics generated in the tuning process. 
+
+Figure () visualizes these metrics. 
+
+```{r}
+tree_tune %>%
+  
+  collect_metrics() %>%
+  
+  mutate(tree_depth = factor(tree_depth)) %>%
+  
+  ggplot(aes(cost_complexity, mean, color = tree_depth)) +
+  
+  geom_line(size = 1.5, alpha = 0.6) +
+  
+  geom_point(size = 2) +
+  
+  facet_wrap(~ .metric, scales = "free", nrow = 2) +
+  
+  scale_x_log10(labels = scales::label_number()) +
+  
+  scale_color_viridis_d(option = "plasma", 
+                        
+                        begin = .9, end = 0)
+```
+
+Here, we see that a shallower tree has the worst performance on both metrics- AUC and Accuracy. 
+
+```{r}
+tree_tune %>% 
+  
+  collect_metrics()
+```
+
+
+Here, we select the best tree. 
+
+```{r}
+best_tree <- tree_tune %>% 
+  
+  select_best("roc_auc")
+  
+```
 
 
 ```{r}
-decision_result <- decision_tree_model %>%
+final_tree <- tree_wf %>% 
+    
+    finalize_workflow(best_tree) %>% 
   
-  fit(left ~ ., data = df_baked_train)
+    fit(data = df_train)
+```
+
+
+```{r}
+
+final_tree %>% 
+  
+  extract_fit_engine() %>% 
+  
+  rpart.plot(roundint = FALSE)
+```
+
+We then do the predictions on the test set, generate metrics and and plot the ROC curve. 
+
+```{r}
+final_tree %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  conf_mat(truth = left, estimate = .pred_class) %>% 
+  
+  summary()
 ```
 
 ```{r}
-rpart.plot::rpart.plot(decision_result$fit,
-                       
-                       main = "Visualisation of Decision Tree Model",
-                       
-                       roundint=FALSE)
+final_tree %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  conf_mat(truth = left, estimate = .pred_class) %>% 
+  
+  autoplot() + 
+  
+  labs(title = "Visualisation of Confusion Matrix: Decision Tree Model")
+```
+
+
+
+```{r}
+final_tree %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  roc_auc(truth = left, .pred_yes)
+```
+
+
+
+```{r}
+
+final_tree %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  roc_curve(truth = left, .pred_yes) %>% 
+  
+  autoplot()
+  
+```
+
+
+```{r}
+final_tree %>% 
+  
+  extract_fit_engine() %>% 
+  
+  vip() + 
+  
+  labs(title = "Variable Importance: Decision Tree Model")
 ```
 
 
 ## Random Forest Model
 
+
+```{r}
+rand_model <- rand_forest() %>% 
+  
+  set_engine("ranger", importance = "impurity") %>% 
+  
+  set_mode("classification")
+```
+
+
+```{r}
+## Create a workflow
+random_model_fit <- workflow() %>% 
+  
+  add_recipe(df_recipe) %>% 
+  
+  add_model(rand_model) %>% 
+  
+  fit(data = df_train)
+```
+
+```{r}
+## Predictions
+random_model_fit %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  conf_mat(truth = left, estimate = .pred_class) %>% 
+  
+  autoplot() + 
+  
+  labs(title = "Visualization of Confusion Matrix: Random Forest Model")
+```
+
+
+```{r}
+## Predictions
+random_model_fit %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  conf_mat(truth = left, estimate = .pred_class) %>% 
+  
+  summary()
+```
+
+
+```{r}
+random_model_fit %>% 
+  
+  augment(new_data = df_test) %>%
+  
+  roc_auc(truth = left, .pred_yes)
+```
+
+```{r}
+random_model_fit %>% 
+  
+  augment(new_data = df_test) %>%
+  
+  roc_curve(truth = left, .pred_yes) %>% 
+  
+  autoplot()
+```
+
+
+```{r}
+random_model_fit %>% 
+  
+  extract_fit_engine() %>% 
+  
+  vip() + 
+  
+  labs(title = "Variable Importance: Random Forest Model")
+```
 
 ## K-Nearest Neighbours (KNN) Model
 
