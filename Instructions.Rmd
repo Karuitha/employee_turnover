@@ -46,9 +46,9 @@ head(df)
 ```
 
 
-## 💪 Competition challenge
+## 💪 Enquiry
 
-Create a report that covers the following:
+Our analysis seeks answers to the following questions:
 
 1. Which department has the highest employee turnover? Which one has the lowest?
 2. Investigate which variables seem to be better predictors of employee departure.

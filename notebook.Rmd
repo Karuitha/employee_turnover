@@ -5,7 +5,7 @@ date: "`r format(Sys.Date(), format = '%A %B %d, %Y')`"
 subtitle: "Can Firms use `Machine Learning` to Manage Employee Turnover?"
 output: 
   html_document:
-    theme: united
+    theme: darkly
     highlight: tango 
     code_folding: hide
     toc: true
@@ -24,23 +24,34 @@ if(!require(pacman)){
   
 }
 
-pacman::p_load(tidyverse, kableExtra, skimr, kable, glue, GGally, 
+pacman::p_load(tidyverse, kableExtra, skimr, knitr, glue, GGally, 
                
-               corrplot, tidymodels, themis, stargazer, rpart, rpartplot)
+               corrplot, tidymodels, themis, stargazer, rpart, rpart.plot, 
+               
+               vip, patchwork, data.table)
 
 ```
 
-# 📖 Background
-In this data analysis project, we assume that we are employees in the human capital department of a large corporation, ABC Inc. The Board of ABC Inc. is worried about the relatively high employee turnover. Our team must look into ways to reduce the number of employees leaving the company.
+<style>
+table {
+  background-color: white !important;
+  color: black !important;
+}
+</style>
 
-Our team needs to understand better the situation, which employees are more likely to leave, and why. Once it is clear what variables impact employee churn, we shall present our findings and our ideas to the board on how to attack the problem.
+
+# 📖 Background
+
+The Board of ABC Inc. is worried about the relatively high employee turnover. To arrest this situation, the board has tasked the Human Resources department to look into ways to reduce the number of employees leaving the company.
+
+The HR manager formed a team to examine this matter, and the authors of this article are part of this team. The team needs to understand better the situation, which employees are more likely to leave, and why. Once it is clear what variables impact employee churn, the team shall present the findings and ideas to the board on how to attack the problem.
 
 # 💪 Objectives
 
-This article seeks answers to the following questions:
+As part of the team, we set forth to answer the following questions:
 
 1. Which department has the highest employee turnover? Which one has the lowest?
-2. Investigate which variables seem to be better predictors of employee departure.
+2. Which variables seem to be better predictors of employee departure?
 3. What recommendations would you make regarding ways to reduce employee turnover?
 
 # Key Insights
@@ -49,7 +60,7 @@ This article seeks answers to the following questions:
 2. `Finance` department has the lowest incidence of staff turnover with `admin` a close second. 
 3. There is high positive correlation between `tenure` which captures the length of time an employee has been with the organisation and the `avg_hours_month`, the average number of hours an employee clocks per month. 
 
-# Key Recommendations
+# Recommendations
 
 
 
@@ -94,10 +105,22 @@ We read the data from a csv file provided. You can download the data from this [
 
 ```{r message = FALSE}
 
-df <- readr::read_csv('./data/employee_churn_data.csv') %>%
-  
+my_col_names <- c("department", "promoted", "review", "projects", "salary", "tenure", "satisfaction", "bonus", "avg_hrs_month", "left")
+
+df <- fread('./data/employee_churn_data.csv') %>%
+
   mutate(left = factor(left, levels = c("yes", "no")))
-head(df)
+
+head(df) %>% 
+  
+  kbl(., booktabs = TRUE, 
+      
+      caption = "First Six Rows of the HR Data") %>% 
+  
+  kable_classic(full_width = TRUE, font_size = 12, 
+                
+                bootstrap_options = "striped")
+
 ```
 
 
@@ -110,15 +133,25 @@ sapply(df, is.na) %>%
   
   tibble(variables = names(df), missing = .) %>%
   
-  arrange(desc(missing))
+  arrange(desc(missing)) %>% 
+  
+  kbl(., booktabs = TRUE, 
+      
+      caption = "Missing Data") %>% 
+  
+  kable_classic(full_width = TRUE, font_size = 12, 
+                
+                bootstrap_options = "striped")
+
 ```
+
 ```{r}
 df %>%
   
   filter(duplicated(.))
 ```
 
-The data set has no missing values and duplicated records. I next delve into the analysis. 
+The data set has no missing values and duplicated records.We next delve into the analysis. 
 
 Figure () below shows a pairs plot between the ten variables in the dataset. Two issues come up particularly strongly from the plot.
 
@@ -133,15 +166,72 @@ df %>%
   
   GGally::ggpairs(ggplot2::aes(col = left, fill = left)) + 
   
-  scale_fill_manual(values = c("gray", "blue")) +
+  scale_color_manual(values = c("gray", "orange")) + 
   
-  scale_color_manual(values = c("gray", "blue"))
+  scale_fill_viridis_d(option = "magma")
   
+```
+
+
+The charts below show the relationship between several variables with employee churn. 
+
+```{r, fig.width = 12, fig.height = 8, fig.cap = "Visualisation of the Variables", warning = FALSE, message = FALSE}
+(df %>% 
+  
+  ggplot(mapping = aes(x = left, y = review, fill = left)) + 
+  
+  geom_boxplot(show.legend = FALSE) + 
+  
+  scale_fill_viridis_d(option = "magma") + 
+  
+  labs(x = "Left", y = "Review", 
+       
+       title = "Review Scores and Employee Churn") +
+
+
+df %>% 
+  
+  ggplot(mapping = aes(x = left, y = avg_hrs_month, fill = left)) + 
+  
+  geom_boxplot(show.legend = FALSE) +
+  
+  scale_fill_viridis_d(option = "magma") + 
+  
+  labs(x = "Left", y = "Average Hours Worked per Month", 
+       
+       title = "Hours Worked and Employee Churn")) /
+
+
+
+(df %>% 
+  
+  ggplot(mapping = aes(x = promoted, y = ..count..)) + 
+  
+  geom_bar(aes(fill = factor(left)), position = "dodge") + 
+  
+  scale_fill_viridis_d(option = "magma") + 
+  
+  labs(x = "Promoted", y = "Count", 
+       
+       title = "Promotion and Employee Churn") +
+
+
+df %>% 
+  
+  ggplot(mapping = aes(x = department, y = ..count..)) + 
+  
+  geom_bar(aes(fill = factor(left)), position = "dodge") + 
+  
+  scale_fill_viridis_d(option = "magma") + 
+  
+  labs(x = "Department", y = "Count", 
+       
+       title = "Department and Employee Churn"))
 ```
 
 ## Summary Statistics
 
-In this section, I summarise the data and present the correlation matrix.
+In this section,Wesummarise the data and present the correlation matrix.
 
 The correlation matrix in Table () shows a very high correlation between `average hours per month` worked and `tenure`as noted earlier in figure (). The data further shows some substantial correlation between `tenure` and `review`, `satisfaction` and `review`, `average hours per month` and review`, `satisfaction` and `tenure`, and finally, `average hours per month` and `satisfaction`. 
 
@@ -196,13 +286,61 @@ df %>%
   
   kbl(., booktabs = TRUE, 
       
-      caption = "Summary Statistics for categorical Variables") %>% kable_classic(full_width = TRUE)
+      caption = "Summary Statistics for categorical Variables") %>%
+  
+      kable_classic(full_width = TRUE)
+```
+
+Finally, I examine how staff satisfaction relates with employee churn in Table (). The output shows that employees who leave hve marginally lower average satisfaction scores. 
+
+```{r}
+df %>% 
+  
+  group_by(left) %>% 
+  
+  summarise(mean_sat = mean(satisfaction),
+            
+            median_sat = median(satisfaction),
+            
+            min_sat = min(satisfaction),
+            
+            max_sat = max(satisfaction)) %>% 
+  
+  kbl(., booktabs = TRUE, 
+      
+      caption = "Employee Satisfaction versus Churn") %>%
+  
+      kable_classic(full_width = FALSE)
 ```
 
 
 # Which Department Has the Highest/ Lowest Turnover
 
-In this section, I examine the employee turnover by department. I define staff turnover as the ratio of the number of employees who left the organisation to the total number of employees in the organisation (including those who have left). using this ratio alows us to standardise employee turnover so that it is comparable across departments. 
+In this section,We examine the employee turnover by department. First, we look at the absolute number of staff who have left each department. 
+
+```{r}
+df %>%
+# we will add a column that has a unique id for each row
+
+mutate(employee_id= row_number())  %>%
+
+  filter(left == "yes") %>%
+
+  group_by(department) %>%
+
+  count(left,sort=TRUE) %>% 
+  
+  select(-left) %>% 
+  
+  kbl(., booktabs = TRUE, 
+      
+      caption = "Employee Churn by Department") %>%
+  
+      kable_classic(full_width = FALSE)
+```
+
+
+However, this approach may be misleading. Hence, we compute turnover. We define staff turnover as the ratio of the number of employees who left the organisation to the total number of employees in the organisation (including those who have left). using this ratio allows us to standardise employee turnover so that it is comparable across departments. 
 
 Table () shows the number of that employee turnover is highest in the IT department, followed by logistics. Finance, followed by administration have the lowest incidence of staff turnover. However, the gap in turnover ratios is not that great. For instance, the gap in staff turnover between IT and finance is only `r glue::glue("{30.9-26.87}%")`, which indicates that staff turnover is a problem in all departments. 
 
@@ -229,12 +367,12 @@ df %>%
       
       caption = "Staff Turnover by Department") %>%
   
-  kable_classic(position = "left")
+  kable_classic(position = "left", full_width = FALSE)
 ```
 
 # Which Variables Best Predict Staff Turnover?
 
-In this section I use statistical learning models to examine variables that best ptredict staff turnover. I proceed by first creating a training set and a testing set from the given data. Given that the data set has a problem of imbalance in the target (dependent) variable, `left`, I upsample the data. I then run the following models. 
+In this sectionWeuse statistical learning models to examine variables that best ptredict staff turnover.Weproceed by first creating a training set and a testing set from the given data. Given that the data set has a problem of imbalance in the target (dependent) variable, `left`,Weupsample the data.Wethen run the following models. 
 
 1. Logistic regression model. 
 2. Decision tree model.
@@ -245,7 +383,7 @@ In this section I use statistical learning models to examine variables that best
 
 ## Creating the Training and Testing Sets. 
 
-In this step, I create a traing and testing set. The training set has 75% of the data, while the testing set has the remaning 25% of the data points. 
+In this step,Wecreate a traing and testing set. The training set has 75% of the data, while the testing set has the remaning 25% of the data points. 
 
 ```{r}
 
@@ -267,7 +405,7 @@ df_test <- split_object %>%
 ```
 
 ## Data Pre-processsing and Feature Engineering
-Next, I set up a recipe object that will allow for data pre-processing and feature engineering where required. In this step, I make a recipe object that does the following.
+Next,We set up a recipe object that will allow for data pre-processing and feature engineering where required. In this step,Wemake a recipe object that does the following.
 
 1. Up-samples the data so that the target variable (`left`) has the same proportion of workers who left and remained with the organisation. 
 
@@ -282,17 +420,17 @@ df_recipe <- recipes::recipe(left ~ .,
                              
                              data = df_train) %>%
   
-  ## I upsample the data to balance the outcome variable
+  ##We upsample the data to balance the outcome variable
   themis::step_upsample(left, 
                         
                         over_ratio = 1, 
                         
                         seed = 500) %>%
   
-  ## I make all character variables factors
+  ##We make all character variables factors
   step_string2factor(all_nominal_predictors()) %>%
   
-  ## I remove one in a pair of highly correlated variables
+  ##We remove one in a pair of highly correlated variables
   ## The threshold for removal is 0.85 (absolute) 
   ## The choice of threshold is subjective. 
   step_corr(all_numeric_predictors(), 
@@ -303,7 +441,7 @@ df_recipe <- recipes::recipe(left ~ .,
   prep(training = df_train)
 ```
 
-Finally, I apply these transformations to the training and testing data sets.
+Finally,We apply these transformations to the training and testing data sets.
 
 ```{r}
 ## Generate new datasets with all steps defined included
@@ -318,7 +456,7 @@ df_baked_test <- df_recipe %>%
   bake(new_data = df_test)
 ```
 
-Next, I fit the models and evaluate their performance. 
+Next,Wefit the models and evaluate their performance. 
 
 ## Logistic Regression
 
@@ -333,7 +471,7 @@ logistic_model <- logistic_reg() %>%
   set_mode("classification")
 ```
 
-Next, I fit the model on the training set.
+Next,We fit the model on the training set.
 
 ```{r, results='asis'}
 logistic_results <- logistic_model %>%
@@ -362,7 +500,7 @@ The results of the regression in Table () show the following variables being ins
 
 The `promoted`, `tenure`, and `satisfaction` variables are major predictors staff turnover. Specifically, staff that have received a promotion have a higher likelihood of leaving, presumably for greener pastures. In contrast, staff that have higher scores in past job reviews, with a longer tenure, and a higher job satisfaction score in the past have a lower chance of leaving. Compared to staff with high salaries, staff with a lower salary are more likely to leave while those with medium salaries are more likely to stay. 
 
-The code chunk below shows the predictions from the logistic regression on the test set. I start using the model make predictions on the test set. Next, I bind the predictions (both probabilities and actual classes predicted) to the test set. 
+The code chunk below shows the predictions from the logistic regression on the test set.Westart using the model make predictions on the test set. Next,Webind the predictions (both probabilities and actual classes predicted) to the test set. 
 
 ```{r}
 #############################################
@@ -391,7 +529,7 @@ df_test_bind <- df_test %>%
             logistic_prob)
 ```
 
-Next, I generate metrics for evaluating the performance of the model.
+Next,We generate metrics for evaluating the performance of the model.
 
 ```{r}
 df_test_bind %>% 
