@@ -28,7 +28,7 @@ pacman::p_load(tidyverse, kableExtra, skimr, knitr, glue, GGally,
                
                corrplot, tidymodels, themis, stargazer, rpart, rpart.plot, 
                
-               vip, patchwork, data.table)
+               vip, patchwork, data.table, kknn, gghalves)
 
 ```
 
@@ -53,6 +53,7 @@ As part of the team, we set forth to answer the following questions:
 1. Which department has the highest employee turnover? Which one has the lowest?
 2. Which variables seem to be better predictors of employee departure?
 3. What recommendations would you make regarding ways to reduce employee turnover?
+4. Which model(s) have the highest predictive power for employees likely to leave the company?
 
 # Key Insights
 
@@ -62,7 +63,17 @@ As part of the team, we set forth to answer the following questions:
 
 # Recommendations
 
+# Project Scope
 
+There are numerous machine learning models that we could use to tackle this problem. To manage the scope of the project, we concentrate on the following models. 
+
+1. Logistic regression model. 
+2. Decision tree model.
+3. Random forest model. 
+4. K-Nearest neighbours model (KNN).
+5. XG-Boost model.
+5. Support vector machine (SVM) model.
+6. An ensemble of all the above models. 
 
 # 💾 The data
 The department has assembled data on almost 10,000 employees. The team gathered the data using information from exit interviews, performance reviews, and other employee records. The data consists of the following variables. 
@@ -101,7 +112,8 @@ tribble(~ Variable, ~ Description,
 
 ## Exploring the Data
 
-We read the data from a csv file provided. You can download the data from this [link]().
+We read the data from a csv file provided. You can download the data from this [link](https://raw.githubusercontent.com/Karuitha/data_projects/master/employee_turnover/data/employee_churn_data.csv) or copy and paste the following web address <https://raw.githubusercontent.com/Karuitha/data_projects/master/employee_turnover/data/employee_churn_data.csv>.
+
 
 ```{r message = FALSE}
 
@@ -191,7 +203,9 @@ The charts below show the relationship between several variables with employee c
 
 df %>% 
   
-  ggplot(mapping = aes(x = left, y = avg_hrs_month, fill = left)) + 
+  ggplot(mapping = aes(x = left, y = avg_hrs_month, 
+                       
+                       fill = left)) + 
   
   geom_boxplot(show.legend = FALSE) +
   
@@ -207,7 +221,9 @@ df %>%
   
   ggplot(mapping = aes(x = promoted, y = ..count..)) + 
   
-  geom_bar(aes(fill = factor(left)), position = "dodge") + 
+  geom_bar(aes(fill = factor(left)), 
+           
+           position = "fill", show.legend = FALSE) + 
   
   scale_fill_viridis_d(option = "magma") + 
   
@@ -220,18 +236,45 @@ df %>%
   
   ggplot(mapping = aes(x = department, y = ..count..)) + 
   
-  geom_bar(aes(fill = factor(left)), position = "dodge") + 
+  geom_bar(aes(fill = factor(left)), 
+           
+           position = "fill", show.legend = FALSE) + 
   
   scale_fill_viridis_d(option = "magma") + 
   
   labs(x = "Department", y = "Count", 
        
-       title = "Department and Employee Churn"))
+       title = "Department and Employee Churn") + 
+  
+  coord_flip())
+```
+
+
+```{r}
+df %>% 
+  
+  ggplot(mapping = aes(x = left, 
+                       
+                       y = satisfaction,
+                       
+                       fill = left)) + 
+  
+  geom_violin(width=0.6) +
+  
+    geom_boxplot(width=0.1, color="grey", alpha=0.2) +
+  
+  scale_fill_viridis_d(option = "magma", alpha = 0.5) + 
+  
+  labs(x = "Left?", y = "Satisfaction", 
+       
+       title = "Satisfaction and Employee Churn")
+  
+  
 ```
 
 ## Summary Statistics
 
-In this section,Wesummarise the data and present the correlation matrix.
+In this section, We summarise the data and present the correlation matrix.
 
 The correlation matrix in Table () shows a very high correlation between `average hours per month` worked and `tenure`as noted earlier in figure (). The data further shows some substantial correlation between `tenure` and `review`, `satisfaction` and `review`, `average hours per month` and review`, `satisfaction` and `tenure`, and finally, `average hours per month` and `satisfaction`. 
 
@@ -372,13 +415,14 @@ df %>%
 
 # Which Variables Best Predict Staff Turnover?
 
-In this sectionWeuse statistical learning models to examine variables that best ptredict staff turnover.Weproceed by first creating a training set and a testing set from the given data. Given that the data set has a problem of imbalance in the target (dependent) variable, `left`,Weupsample the data.Wethen run the following models. 
+In this section We use statistical learning models to examine variables that best predict staff turnover.We proceed by first creating a training set and a testing set from the given data. Given that the data set has a problem of imbalance in the target (dependent) variable, `left`,We up-sample the data.We then run the following models. 
 
 1. Logistic regression model. 
 2. Decision tree model.
 3. Random forest model. 
 4. K-Nearest neighbours model (KNN).
 5. XG-Boost Model.
+5. Support vector machine (SVM) model.
 6. An ensemble of all the models. 
 
 ## Creating the Training and Testing Sets. 
@@ -872,8 +916,215 @@ random_model_fit %>%
 
 ## K-Nearest Neighbours (KNN) Model
 
+```{r}
+knn_model <- nearest_neighbor(
+  
+  neighbors = tune()
+  
+) %>% 
+  
+  set_engine("kknn") %>% 
+  
+  set_mode("classification")
+```
+
+
+```{r}
+knn_wf <- workflow() %>% 
+  
+  add_recipe(df_recipe) %>% 
+  
+  add_model(knn_model)
+```
+
+```{r, cache = TRUE}
+neighbours_grid <- tibble(neighbors = seq(from = 5, to = 100, 
+                                          
+                                          by = 5))
+
+
+knn_tune <- knn_wf %>% 
+  
+  tune_grid(
+    
+    resamples = cell_folds,
+    
+    grid = neighbours_grid
+    
+  )
+```
+
+
+```{r}
+knn_tune_best <- knn_tune %>% 
+  
+  select_best("roc_auc")
+```
+
+
+```{r}
+final_knn_model <- knn_wf %>% 
+  
+  finalize_workflow(knn_tune_best) %>% 
+  
+  fit(data = df_train)
+```
+
+```{r}
+final_knn_model %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  conf_mat(truth = left, estimate = .pred_class) %>% 
+  
+  autoplot()
+```
+
+```{r}
+final_knn_model %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  conf_mat(truth = left, estimate = .pred_class) %>% 
+  
+  summary()
+
+```
+
+
+```{r}
+final_knn_model %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  roc_auc(truth = left, .pred_yes)
+
+```
+
+
+```{r}
+final_knn_model %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  roc_curve(truth = left, .pred_yes) %>% 
+  
+  autoplot()
+```
+
+## Support Vector Machines (SVMs)
+
+The idea behind SVMs is to define a hyperplane that distinctly divides data points into their respective categories. Where there are two categories, then this hyperplane will be a line. If we have three classes, then we have a plane. Beyond this we have hyperplanes in N-Dimensions. In many cases, there exists more than one hyperplane to distinguish between the categories. In that case, we select the hyperplane that gives the [largest separation or margin between the categories](https://www.geeksforgeeks.org/support-vector-machine-algorithm/). In cases where classes are not linearly separable, we can create a new variable that is a function of the distance from the origin called the `kernel`. 
+
+We implement the SVM model. 
+
+```{r}
+svm_model <- svm_rbf(
+  
+  cost = tune(),
+  
+  rbf_sigma = tune()
+  
+) %>% 
+  
+  set_mode("classification") %>% 
+  
+  set_engine("kernlab")
+```
+
+
+```{r}
+svm_wf <- workflow() %>% 
+  
+  add_recipe(df_recipe) %>% 
+  
+  add_model(svm_model)
+
+```
+
+
+```{r, cache = TRUE}
+ctrl <- control_grid(verbose = FALSE, save_pred = TRUE)
+
+roc_vals <- metric_set(roc_auc)
+
+svm_tune <- svm_wf %>% 
+  
+  tune_grid(
+    
+    resamples = cell_folds,
+    
+    control = ctrl,
+    
+    metrics = roc_vals
+    
+  )
+```
+
+
+
+```{r}
+
+svm_tune_best <- svm_tune %>% 
+  
+  select_best()
+
+#############################
+svm_final_model <- svm_wf %>% 
+  
+  finalize_workflow(svm_tune_best) %>% 
+  
+  fit(data = df_train)
+```
+
+
+```{r}
+svm_final_model %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  conf_mat(truth = left, estimate = .pred_class) %>% 
+  
+  autoplot()
+```
+
+```{r}
+svm_final_model %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  conf_mat(truth = left, estimate = .pred_class) %>% 
+  
+  summary()
+```
+
+
+
+```{r}
+svm_final_model %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  roc_auc(truth = left, .pred_yes)
+```
+
+
+
+```{r}
+svm_final_model %>% 
+  
+  augment(new_data = df_test) %>% 
+  
+  roc_curve(truth = left, .pred_yes) %>% 
+  
+  autoplot() + 
+  
+  labs(title = "ROC Curve for SVM Model (ROC AUC = 0.901)")
+```
 
 ## Extreme Gradient Boosting (XGBoost) Model
+
+In this section, we borrow substantially from [Julie Silge](https://juliasilge.com/blog/xgboost-tune-volleyball/) material on tuning XGBoost models. The material in in both audio and written form.
 
 
 ## Ensemble
